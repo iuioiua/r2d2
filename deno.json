@@ -1,0 +1,5 @@
+{
+  "tasks": {
+    "test": "deno test --allow-run=redis-server --allow-net=127.0.0.1"
+  }
+}

@@ -38,22 +38,44 @@ async function writeRequest(
   await writeAll(conn, encoder.encode(request));
 }
 
-async function readLineOrLines(tpReader: TextProtoReader): Promise<Reply> {
+async function readNonNullArray(
+  tpReader: TextProtoReader,
+  length: number,
+): Promise<Reply[]> {
+  const array = [];
+  for (let i = 0; i < length; i++) {
+    const reply: Reply = await readLineOrArray(tpReader);
+    array.push(reply);
+  }
+  return array;
+}
+
+async function readLineOrArray(tpReader: TextProtoReader): Promise<Reply> {
   const line = await tpReader.readLine();
-  return await {
-    [PREFIXES.SIMPLE_STRING]: () => removePrefix(line!),
-    [PREFIXES.ERROR]: () => {
-      throw new Error(removePrefix(line!));
-    },
-    [PREFIXES.INTEGER]: () => parseInteger(line!),
-    [PREFIXES.BULK_STRING]: () =>
-      parseInteger(line!) === -1 ? null : readLineOrLines(tpReader),
-    [PREFIXES.ARRAY]: async () => {
-      const lines = [];
-      for (let i = 0; i < parseInteger(line!); i++) {
-        const lineOrLines = await readLineOrLines(tpReader);
-        lines.push(lineOrLines);
-      }
+  switch (line!.charAt(0)) {
+    /** Simple string */
+    case "+":
+      return removePrefix(line!);
+    /** Error */
+    case "-":
+      return Promise.reject(removePrefix(line!));
+    /** Integer */
+    case ":":
+      return Number(removePrefix(line!));
+    /** Bulk string */
+    case "$":
+      return Number(removePrefix(line!)) === -1
+        ? null
+        : await readLineOrArray(tpReader);
+    /** Array */
+    case "*": {
+      const length = Number(removePrefix(line!));
+      return length === -1 ? null : await readNonNullArray(tpReader, length);
+    }
+    /** No prefix */
+    default:
+      return line;
+  }
       return lines;
     },
   }[line!.charAt(0)]?.() ?? line;

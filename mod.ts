@@ -18,10 +18,12 @@ function removePrefix(line: string): string {
   return line.slice(1);
 }
 
-function parseInteger(line: string): number {
-  return Number(removePrefix(line));
-}
-
+/**
+ * Transforms a command, which is an array of arguments, into a RESP request string.
+ * @see https://redis.io/docs/reference/protocol-spec/#send-commands-to-a-redis-server
+ * @param command
+ * @returns RESP request string
+ */
 function stringifyRequest(command: Command): string {
   let request = "*" + command.length + CRLF;
   for (const arg of command) {
@@ -31,6 +33,11 @@ function stringifyRequest(command: Command): string {
   return request;
 }
 
+/**
+ * Encodes and sends the request string to the server.
+ * @param conn Redis connection
+ * @param request RESP request string
+ */
 async function writeRequest(
   conn: Deno.Conn,
   request: string,
@@ -81,6 +88,11 @@ async function readLineOrArray(tpReader: TextProtoReader): Promise<Reply> {
   }[line!.charAt(0)]?.() ?? line;
 }
 
+/**
+ * Turns the Redis connection into a `TextProtoreader` which is read, line-by-line.
+ * @param conn Redis connection
+ * @returns RESP reply
+ */
 async function readReply(conn: Deno.Conn): Promise<Reply> {
   const bufReader = new BufReader(conn);
   const tpReader = new TextProtoReader(bufReader);

@@ -65,6 +65,7 @@ async function readLineOrArray(tpReader: TextProtoReader): Promise<Reply> {
     case "$":
       return Number(removePrefix(line!)) === -1
         ? null
+        /** Skip to reading the next line, which is a string */
         : await readLineOrArray(tpReader);
     /** Array */
     case "*": {

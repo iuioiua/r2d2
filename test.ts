@@ -9,18 +9,24 @@ import {
 } from "./deps.ts";
 import { type Command, type Reply, sendCommand } from "./mod.ts";
 
-let conn: Deno.Conn;
-let serverProcess: Deno.Process;
-
-/** The server listens on port 6379 by default */
-beforeAll(async () => {
-  serverProcess = Deno.run({
+export async function createServerProcess(): Promise<Deno.Process> {
+  /** The server listens on port 6379 by default */
+  const serverProcess = Deno.run({
     cmd: ["redis-server"],
     stdin: "null",
     stdout: "null",
   });
   /** Let the server breathe for a second before connecting */
   await delay(1_000);
+  return serverProcess;
+}
+
+let conn: Deno.Conn;
+let serverProcess: Deno.Process;
+
+/** The server listens on port 6379 by default */
+beforeAll(async () => {
+  serverProcess = await createServerProcess();
   conn = await Deno.connect({ port: 6379 });
 });
 

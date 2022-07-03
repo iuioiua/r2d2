@@ -1,5 +1,6 @@
 {
   "tasks": {
-    "test": "deno test --allow-run=redis-server --allow-net=127.0.0.1"
+    "test": "deno test --allow-run=redis-server --allow-net=127.0.0.1",
+    "bench": "deno --unstable bench --allow-run=redis-server --allow-net=127.0.0.1"
   }
 }

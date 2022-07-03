@@ -6,14 +6,6 @@ export type Reply = string | number | null | Reply[];
 const CRLF = "\r\n";
 const encoder = new TextEncoder();
 
-const PREFIXES: Readonly<Record<string, string>> = {
-  SIMPLE_STRING: "+",
-  ERROR: "-",
-  INTEGER: ":",
-  BULK_STRING: "$",
-  ARRAY: "*",
-};
-
 function removePrefix(line: string): string {
   return line.slice(1);
 }
@@ -83,9 +75,6 @@ async function readLineOrArray(tpReader: TextProtoReader): Promise<Reply> {
     default:
       return line;
   }
-      return lines;
-    },
-  }[line!.charAt(0)]?.() ?? line;
 }
 
 /**
@@ -96,7 +85,7 @@ async function readLineOrArray(tpReader: TextProtoReader): Promise<Reply> {
 async function readReply(conn: Deno.Conn): Promise<Reply> {
   const bufReader = new BufReader(conn);
   const tpReader = new TextProtoReader(bufReader);
-  return await readLineOrLines(tpReader);
+  return await readLineOrArray(tpReader);
 }
 
 export async function sendCommand(

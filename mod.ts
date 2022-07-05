@@ -11,10 +11,8 @@ function removePrefix(line: string): string {
 }
 
 /**
- * Transforms a command, which is an array of arguments, into a RESP request string.
+ * Transforms a command, which is an array of arguments, into an RESP request string.
  * @see https://redis.io/docs/reference/protocol-spec/#send-commands-to-a-redis-server
- * @param command
- * @returns RESP request string
  */
 function stringifyRequest(command: Command): string {
   let request = "*" + command.length + CRLF;
@@ -25,11 +23,7 @@ function stringifyRequest(command: Command): string {
   return request;
 }
 
-/**
- * Encodes and sends the request string to the server.
- * @param conn Redis connection
- * @param request RESP request string
- */
+/** Encodes and sends the request string to the server. */
 async function writeRequest(
   conn: Deno.Conn,
   request: string,
@@ -43,13 +37,17 @@ async function readNonNullArray(
 ): Promise<Reply[]> {
   const array = [];
   for (let i = 0; i < length; i++) {
-    const reply: Reply = await readLineOrArray(tpReader);
+    const reply: Reply = await readReply(tpReader);
     array.push(reply);
   }
   return array;
 }
 
-async function readLineOrArray(tpReader: TextProtoReader): Promise<Reply> {
+/**
+ * Reads and processes the response line-by-line.
+ * @see https://redis.io/docs/reference/protocol-spec/#resp-protocol-description
+ */
+async function readReply(tpReader: TextProtoReader): Promise<Reply> {
   const line = await tpReader.readLine();
   switch (line!.charAt(0)) {
     /** Simple string */
@@ -66,7 +64,7 @@ async function readLineOrArray(tpReader: TextProtoReader): Promise<Reply> {
       return Number(removePrefix(line!)) === -1
         ? null
         : /** Skip to reading the next line, which is a string */
-          await readLineOrArray(tpReader);
+          await readReply(tpReader);
     /** Array */
     case "*": {
       const length = Number(removePrefix(line!));
@@ -78,21 +76,33 @@ async function readLineOrArray(tpReader: TextProtoReader): Promise<Reply> {
   }
 }
 
-/**
- * Turns the Redis connection into a `TextProtoreader` which is read, line-by-line.
- * @param conn Redis connection
- * @returns RESP reply
- */
-async function readReply(conn: Deno.Conn): Promise<Reply> {
-  const bufReader = new BufReader(conn);
-  const tpReader = new TextProtoReader(bufReader);
-  return await readLineOrArray(tpReader);
+function toTpReader(redisConn: Deno.Conn): TextProtoReader {
+  return new TextProtoReader(new BufReader(redisConn));
 }
 
+/**
+ * Sends a command to the Redis server and returns the parsed reply.
+ *
+ * Example:
+ * ```ts
+ * import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+ *
+ * const redisConn = await Deno.connect({ port: 6379 });
+ *
+ * // Resolves to "OK"
+ * await sendCommand(redisConn, ["SET", "hello", "world"]);
+ *
+ * // Prints "world"
+ * console.log(await sendCommand(redisConn, ["GET", "hello"]));
+ * ```
+ * @param redisConn Redis connection to the server.
+ * @param command Redis command, which is an array of arguments.
+ * @returns Parsed Redis reply
+ */
 export async function sendCommand(
-  conn: Deno.Conn,
+  redisConn: Deno.Conn,
   command: Command,
 ): Promise<Reply> {
-  await writeRequest(conn, stringifyRequest(command));
-  return await readReply(conn);
+  await writeRequest(redisConn, stringifyRequest(command));
+  return await readReply(toTpReader(redisConn));
 }

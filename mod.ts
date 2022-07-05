@@ -1,6 +1,8 @@
 import { BufReader, TextProtoReader, writeAll } from "./deps.ts";
 
+/** Redis command, which is an array of arguments. */
 export type Command = (string | number)[];
+/** Parsed Redis reply */
 export type Reply = string | number | null | Reply[];
 
 const CRLF = "\r\n";

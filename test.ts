@@ -18,6 +18,10 @@ Deno.test("sendCommand", async (t) => {
   const serverProcess = await createServerProcess();
   const redisConn = await Deno.connect({ port: 6379 });
 
+  /** Prevents dumb.rdb from being generated */
+  await sendCommand(redisConn, ["CONFIG", "SET", "APPENDONLY", "NO"]);
+  await sendCommand(redisConn, ["CONFIG", "SET", "SAVE", ""]);
+
   await t.step("parses simple string", async () => {
     assertEquals(await sendCommand(redisConn, ["PING"]), "PONG");
   });

@@ -3,13 +3,7 @@ export { BufReader } from "https://deno.land/std@0.146.0/io/buffer.ts";
 export { TextProtoReader } from "https://deno.land/std@0.146.0/textproto/mod.ts";
 
 /** Testing */
-export {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  it,
-} from "https://deno.land/std@0.145.0/testing/bdd.ts";
-export { delay } from "https://deno.land/std@0.145.0/async/delay.ts";
+export { delay } from "https://deno.land/std@0.146.0/async/delay.ts";
 export {
   assertEquals,
   assertRejects,

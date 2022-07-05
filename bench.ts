@@ -9,12 +9,8 @@ const redis = await connect({
   port: 6379,
 });
 
-/**
- * PING
- */
-
 Deno.bench({
-  name: "r2d2",
+  name: "r2d2: PING",
   group: "PING",
   baseline: true,
   async fn() {
@@ -23,19 +19,15 @@ Deno.bench({
 });
 
 Deno.bench({
-  name: "deno-redis",
+  name: "deno-redis: PING",
   group: "PING",
   async fn() {
     await redis.ping();
   },
 });
 
-/**
- * SET and GET
- */
-
 Deno.bench({
-  name: "r2d2",
+  name: "r2d2: SET and GET",
   group: "SET and GET",
   baseline: true,
   async fn() {
@@ -45,7 +37,7 @@ Deno.bench({
 });
 
 Deno.bench({
-  name: "deno-redis",
+  name: "deno-redis: SET and GET",
   group: "SET and GET",
   async fn() {
     await redis.sendCommand("SET", "mykey", "Hello");
@@ -53,11 +45,8 @@ Deno.bench({
   },
 });
 
-/**
- * MSET and MGET
- */
 Deno.bench({
-  name: "r2d2",
+  name: "r2d2: MSET and MGET",
   group: "MSET and MGET",
   baseline: true,
   async fn() {
@@ -67,7 +56,7 @@ Deno.bench({
 });
 
 Deno.bench({
-  name: "deno-redis",
+  name: "deno-redis: MSET and MGET",
   group: "MSET and MGET",
   async fn() {
     await redis.mset({ a: "foo", b: "bar" });

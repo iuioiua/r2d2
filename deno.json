@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "test": "deno test --allow-run=redis-server --allow-net=127.0.0.1:6379",
+    "test": "deno test --allow-run=redis-server --allow-net=127.0.0.1:6379 --trace-ops",
     "bench": "deno --unstable bench --allow-run=redis-server --allow-net=127.0.0.1:6379"
   }
 }

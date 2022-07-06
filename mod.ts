@@ -57,7 +57,7 @@ async function readReply(tpReader: TextProtoReader): Promise<Reply> {
       return removePrefix(line!);
     /** Error */
     case "-":
-      return Promise.reject(removePrefix(line!));
+      return await Promise.reject(removePrefix(line!));
     /** Integer */
     case ":":
       return Number(removePrefix(line!));

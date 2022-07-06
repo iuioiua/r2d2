@@ -2,12 +2,19 @@ import { assertEquals, assertRejects } from "./deps.ts";
 import { type Command, type Reply, sendCommand } from "./mod.ts";
 
 /**
- * The server listens on port 6379 by default.
+ * The server listens on the port defined by the `REDIS_PORT` environment variable.
+ * If not defined, port 6379 will be used by default.
  *
  * Exported for use in benchmarks.
  */
 export const serverProcess = Deno.run({
-  cmd: ["redis-server", "--daemonize", "yes"],
+  cmd: [
+    "redis-server",
+    "--daemonize",
+    "yes",
+    "--port",
+    Deno.env.get("REDIS_PORT") ?? "6379",
+  ],
   stdin: "null",
   stdout: "null",
 });

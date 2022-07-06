@@ -1,5 +1,5 @@
 import { assertEquals, assertRejects, delay } from "./deps.ts";
-import { sendCommand } from "./mod.ts";
+import { type Command, type Reply, sendCommand } from "./mod.ts";
 
 /** Exported for use in benchmarks */
 export async function createServerProcess(): Promise<Deno.Process> {
@@ -18,12 +18,22 @@ Deno.test("sendCommand", async (t) => {
   const serverProcess = await createServerProcess();
   const redisConn = await Deno.connect({ port: 6379 });
 
-  /** Prevents dumb.rdb from being generated */
-  await sendCommand(redisConn, ["CONFIG", "SET", "APPENDONLY", "NO"]);
-  await sendCommand(redisConn, ["CONFIG", "SET", "SAVE", ""]);
+  async function sendCommandTest(
+    command: Command,
+    expected: Reply,
+  ): Promise<void> {
+    assertEquals(await sendCommand(redisConn, command), expected);
+  }
+
+  /** Ensure DB is clean */
+  async function flushDB(): Promise<void> {
+    await sendCommand(redisConn, ["FLUSHDB"]);
+  }
+
+  await flushDB();
 
   await t.step("parses simple string", async () => {
-    assertEquals(await sendCommand(redisConn, ["PING"]), "PONG");
+    await sendCommandTest(["PING"], "PONG");
   });
 
   await t.step("parses error", () => {
@@ -31,20 +41,17 @@ Deno.test("sendCommand", async (t) => {
   });
 
   await t.step("parses integer", async () => {
-    await sendCommand(redisConn, ["SET", "integer", 10]);
-    assertEquals(await sendCommand(redisConn, ["INCR", "integer"]), 11);
+    await sendCommandTest(["INCR", "integer"], 1);
+    await sendCommandTest(["INCR", "integer"], 2);
   });
 
   await t.step("parses bulk string", async () => {
     await sendCommand(redisConn, ["SET", "big ups", "west side massive"]);
-    assertEquals(
-      await sendCommand(redisConn, ["GET", "big ups"]),
-      "west side massive",
-    );
+    await sendCommandTest(["GET", "big ups"], "west side massive");
   });
 
   await t.step("parses null", async () => {
-    assertEquals(await sendCommand(redisConn, ["GET", "nonexistant"]), null);
+    await sendCommandTest(["GET", "nonexistant"], null);
   });
 
   await t.step("parses array", async () => {
@@ -56,26 +63,24 @@ Deno.test("sendCommand", async (t) => {
       "integer",
       13,
     ]);
-    assertEquals(
-      await sendCommand(redisConn, [
-        "HMGET",
-        "hash",
-        "hello",
-        "integer",
-        "nonexistant",
-      ]),
-      ["world", "13", null],
-    );
+    await sendCommandTest([
+      "HMGET",
+      "hash",
+      "hello",
+      "integer",
+      "nonexistant",
+    ], ["world", "13", null]);
   });
 
   await t.step("parses empty array", async () => {
-    assertEquals(await sendCommand(redisConn, ["HGETALL", "nonexistant"]), []);
+    await sendCommandTest(["HGETALL", "nonexistant"], []);
   });
 
   await t.step("parses null array", async () => {
-    assertEquals(await sendCommand(redisConn, ["BLPOP", "list", 1]), null);
+    await sendCommandTest(["BLPOP", "list", 1], null);
   });
 
+  await flushDB();
   serverProcess.close();
   redisConn.close();
 });

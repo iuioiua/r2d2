@@ -1,33 +1,30 @@
-import { assertEquals, assertRejects, delay } from "./deps.ts";
+import { assertEquals, assertRejects } from "./deps.ts";
 import { type Command, type Reply, sendCommand } from "./mod.ts";
 
-/** Exported for use in benchmarks */
-export async function createServerProcess(): Promise<Deno.Process> {
-  /** The server listens on port 6379 by default */
-  const serverProcess = Deno.run({
-    cmd: ["redis-server"],
-    stdin: "null",
-    stdout: "null",
-  });
-  /** Let the server breathe for a second before connecting */
-  await delay(1_000);
-  return serverProcess;
-}
+/**
+ * The server listens on port 6379 by default.
+ *
+ * Exported for use in benchmarks.
+ */
+export const serverProcess = Deno.run({
+  cmd: ["redis-server", "--daemonize", "yes"],
+  stdin: "null",
+  stdout: "null",
+});
 
 Deno.test("sendCommand", async (t) => {
-  const serverProcess = await createServerProcess();
+  await serverProcess.status();
   const redisConn = await Deno.connect({ port: 6379 });
+
+  async function flushDB() {
+    await sendCommand(redisConn, ["FLUSHDB"]);
+  }
 
   async function sendCommandTest(
     command: Command,
     expected: Reply,
   ): Promise<void> {
     assertEquals(await sendCommand(redisConn, command), expected);
-  }
-
-  /** Ensure DB is clean */
-  async function flushDB(): Promise<void> {
-    await sendCommand(redisConn, ["FLUSHDB"]);
   }
 
   await flushDB();
@@ -81,6 +78,6 @@ Deno.test("sendCommand", async (t) => {
   });
 
   await flushDB();
-  serverProcess.close();
+
   redisConn.close();
 });

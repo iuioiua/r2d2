@@ -99,14 +99,17 @@ function toTpReader(redisConn: Deno.Conn): TextProtoReader {
  * ```
  * @param redisConn Redis connection to the server.
  * @param command Redis command, which is an array of arguments.
+ * @param echo If `true`, a reply is read. Defaults to true.
  * @returns Parsed Redis reply
  */
 export async function sendCommand(
   redisConn: Deno.Conn,
   command: Command,
-): Promise<Reply> {
+  echo = true,
+): Promise<Reply | void> {
   await writeRequest(redisConn, stringifyRequest(command));
-  return await readReply(toTpReader(redisConn));
+  if (echo) {
+    return await readReply(toTpReader(redisConn));
   }
 }
 

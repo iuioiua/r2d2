@@ -1,5 +1,10 @@
 import { assertEquals, assertRejects } from "./deps.ts";
-import { type Command, type Reply, sendCommand } from "./mod.ts";
+import {
+  type Command,
+  pipelineCommands,
+  type Reply,
+  sendCommand,
+} from "./mod.ts";
 
 /**
  * The server listens on the port defined by the `REDIS_PORT` environment variable.

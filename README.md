@@ -2,6 +2,10 @@
 
 Simple, lightweight Redis client library for Deno.
 
+## Usage
+
+### Basic commands
+
 ```ts
 import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
 

@@ -84,6 +84,25 @@ Deno.test("sendCommand", async (t) => {
     await sendCommandTest(["BLPOP", "list", 1], null);
   });
 
+  await t.step("pipelining works", async () => {
+    assertEquals(
+      await pipelineCommands(redisConn, [
+        ["INCR", "X"],
+        ["INCR", "X"],
+        ["INCR", "X"],
+        ["INCR", "X"],
+      ]),
+      [1, 2, 3, 4],
+    );
+  });
+
+  await t.step("transactions work", async () => {
+    await sendCommandTest(["MULTI"], "OK");
+    await sendCommandTest(["INCR", "FOO"], "QUEUED");
+    await sendCommandTest(["INCR", "BAR"], "QUEUED");
+    await sendCommandTest(["EXEC"], [1, 1]);
+  });
+
   await flushDB();
 
   redisConn.close();

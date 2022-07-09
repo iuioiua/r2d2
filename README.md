@@ -16,11 +16,27 @@ console.log(await sendCommand(redisConn, ["GET", "hello"]));
 redisConn.close();
 ```
 
-## Features
+If you'd like to ignore the reply.
 
-- [x] Stateless commands
-- [ ] Pipelining
-- [ ] Pub/sub
+```ts
+await sendCommand(redis, ["SHUTDOWN"], false);
+```
+
+### Pipelining
+
+```ts
+import { pipelineCommands } from "https://deno.land/x/r2d2/mod.ts";
+
+const redisConn = await Deno.connect({ port: 6379 });
+
+// Resolves to [1, 2, 3, 4]
+await pipelineCommands(redisConn, [
+  ["INCR", "X"],
+  ["INCR", "X"],
+  ["INCR", "X"],
+  ["INCR", "X"],
+]);
+```
 
 ## Principles
 

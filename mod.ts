@@ -107,4 +107,46 @@ export async function sendCommand(
 ): Promise<Reply> {
   await writeRequest(redisConn, stringifyRequest(command));
   return await readReply(toTpReader(redisConn));
+  }
+}
+
+/**
+ * Pipelines commands to the Redis server and returns the parsed replies.
+ *
+ * Example:
+ * ```ts
+ * import { pipelineCommands } from "https://deno.land/x/r2d2/mod.ts";
+ *
+ * const redisConn = await Deno.connect({ port: 6379 });
+ *
+ * // Resolves to [1, 2, 3, 4]
+ * await pipelineCommands(redisConn, [
+ *  ["INCR", "X"],
+ *  ["INCR", "X"],
+ *  ["INCR", "X"],
+ *  ["INCR", "X"],
+ * ]);
+ * ```
+ *
+ * @param redisConn Redis connection to the server
+ * @param commands An array of Redis commands
+ * @param echo If `true`, replies are read. Defaults to true.
+ * @returns Parsed Redis replies
+ */
+export async function pipelineCommands(
+  redisConn: Deno.Conn,
+  commands: Command[],
+  echo = true,
+): Promise<Reply[] | void> {
+  const request = commands.map(stringifyRequest).join("");
+  await writeRequest(redisConn, request);
+  if (echo) {
+    const tpReader = toTpReader(redisConn);
+    const replies: Reply[] = [];
+    for (const _ of commands) {
+      const reply = await readReply(tpReader);
+      replies.push(reply);
+    }
+    return replies;
+  }
 }

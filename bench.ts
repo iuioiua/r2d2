@@ -1,6 +1,7 @@
 import { sendCommand } from "./mod.ts";
 import { serverProcess } from "./test.ts";
 import { connect } from "./deps.ts";
+import { REDIS_PORT, SERVER_PROCESS } from "./_util.ts";
 
 await serverProcess.status();
 const redisConn = await Deno.connect({ port: 6379 });

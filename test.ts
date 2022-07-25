@@ -5,6 +5,7 @@ import {
   type Reply,
   sendCommand,
 } from "./mod.ts";
+import { REDIS_PORT, SERVER_PROCESS } from "./_util.ts";
 
 /**
  * The server listens on the port defined by the `REDIS_PORT` environment variable.

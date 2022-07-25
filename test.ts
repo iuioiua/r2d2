@@ -7,27 +7,9 @@ import {
 } from "./mod.ts";
 import { REDIS_PORT, SERVER_PROCESS } from "./_util.ts";
 
-/**
- * The server listens on the port defined by the `REDIS_PORT` environment variable.
- * If not defined, port 6379 will be used by default.
- *
- * Exported for use in benchmarks.
- */
-export const serverProcess = Deno.run({
-  cmd: [
-    "redis-server",
-    "--daemonize",
-    "yes",
-    "--port",
-    Deno.env.get("REDIS_PORT") ?? "6379",
-  ],
-  stdin: "null",
-  stdout: "null",
-});
-
-Deno.test("sendCommand", async (t) => {
-  await serverProcess.status();
-  const redisConn = await Deno.connect({ port: 6379 });
+Deno.test("sendCommand and pipelineCommands", async (t) => {
+  await SERVER_PROCESS.status();
+  const redisConn = await Deno.connect({ port: REDIS_PORT });
 
   async function flushDB() {
     await sendCommand(redisConn, ["FLUSHDB"]);

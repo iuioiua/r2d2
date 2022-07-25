@@ -3,11 +3,12 @@ import { serverProcess } from "./test.ts";
 import { connect } from "./deps.ts";
 import { REDIS_PORT, SERVER_PROCESS } from "./_util.ts";
 
-await serverProcess.status();
-const redisConn = await Deno.connect({ port: 6379 });
+await SERVER_PROCESS.status();
+
+const redisConn = await Deno.connect({ port: REDIS_PORT });
 const redis = await connect({
   hostname: "127.0.0.1",
-  port: 6379,
+  port: REDIS_PORT,
 });
 
 Deno.bench("r2d2", { baseline: true }, async () => {

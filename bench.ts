@@ -1,5 +1,4 @@
 import { sendCommand } from "./mod.ts";
-import { serverProcess } from "./test.ts";
 import { connect } from "./deps.ts";
 import { REDIS_PORT, SERVER_PROCESS } from "./_util.ts";
 
@@ -21,7 +20,7 @@ Deno.bench("r2d2", { baseline: true }, async () => {
   await sendCommand(redisConn, ["MGET", "a", "b"]);
 });
 
-Deno.bench("deno-redis", async () => {
+Deno.bench("redis", async () => {
   await redis.ping();
 
   await redis.set("mykey", "Hello");
@@ -32,6 +31,6 @@ Deno.bench("deno-redis", async () => {
 });
 
 globalThis.addEventListener("unload", () => {
-  redis.close();
   redisConn.close();
+  redis.close();
 });

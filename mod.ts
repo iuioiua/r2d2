@@ -12,9 +12,15 @@ function removePrefix(line: string): string {
   return line.slice(1);
 }
 
+/** Converts `Deno.Conn` to `TextProtoReader`. */
+function toTpReader(redisConn: Deno.Conn): TextProtoReader {
+  return new TextProtoReader(new BufReader(redisConn));
+}
+
 /**
  * Transforms a command, which is an array of arguments, into an RESP request string.
- * @see https://redis.io/docs/reference/protocol-spec/#send-commands-to-a-redis-server
+ *
+ * See {@link https://redis.io/docs/reference/protocol-spec/#send-commands-to-a-redis-server}
  */
 function stringifyRequest(command: Command): string {
   let request = "*" + command.length + CRLF;
@@ -33,13 +39,16 @@ async function writeRequest(
   await writeAll(conn, encoder.encode(request));
 }
 
-async function readNonNullArray(
+async function readArray(
   tpReader: TextProtoReader,
   length: number,
-): Promise<Reply[]> {
+): Promise<null | Reply[]> {
+  if (length === -1) {
+    return null;
+  }
   const array = [];
   for (let i = 0; i < length; i++) {
-    const reply: Reply = await readReply(tpReader);
+    const reply = await readReply(tpReader);
     array.push(reply);
   }
   return array;
@@ -47,39 +56,37 @@ async function readNonNullArray(
 
 /**
  * Reads and processes the response line-by-line.
- * @see https://redis.io/docs/reference/protocol-spec/#resp-protocol-description
+ *
+ * See {@link https://redis.io/docs/reference/protocol-spec/#resp-protocol-description}
  */
 async function readReply(tpReader: TextProtoReader): Promise<Reply> {
   const line = await tpReader.readLine();
-  switch (line!.charAt(0)) {
+  if (line === null) {
+    return await Promise.reject("No response received from Redis server");
+  }
+  switch (line.charAt(0)) {
     /** Simple string */
     case "+":
-      return removePrefix(line!);
+      return removePrefix(line);
     /** Error */
     case "-":
-      return await Promise.reject(removePrefix(line!));
+      return await Promise.reject(removePrefix(line));
     /** Integer */
     case ":":
-      return Number(removePrefix(line!));
+      return Number(removePrefix(line));
     /** Bulk string */
     case "$":
-      return Number(removePrefix(line!)) === -1
+      return Number(removePrefix(line)) === -1
         ? null
         : /** Skip to reading the next line, which is a string */
           await readReply(tpReader);
     /** Array */
-    case "*": {
-      const length = Number(removePrefix(line!));
-      return length === -1 ? null : await readNonNullArray(tpReader, length);
-    }
+    case "*":
+      return await readArray(tpReader, Number(removePrefix(line)));
     /** No prefix */
     default:
       return line;
   }
-}
-
-function toTpReader(redisConn: Deno.Conn): TextProtoReader {
-  return new TextProtoReader(new BufReader(redisConn));
 }
 
 /**
@@ -87,20 +94,12 @@ function toTpReader(redisConn: Deno.Conn): TextProtoReader {
  *
  * Example:
  * ```ts
- * import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
- *
  * const redisConn = await Deno.connect({ port: 6379 });
  *
- * // Resolves to "OK"
- * await sendCommand(redisConn, ["SET", "hello", "world"]);
+ * await sendCommand(redisConn, ["SET", "hello", "world"]); // Returns "OK"
  *
- * // Prints "world"
- * console.log(await sendCommand(redisConn, ["GET", "hello"]));
+ * await sendCommand(redisConn, ["GET", "hello"]); // Returns "world"
  * ```
- * @param redisConn Redis connection to the server.
- * @param command Redis command, which is an array of arguments.
- * @param echo If `true`, a reply is read. Defaults to true.
- * @returns Parsed Redis reply
  */
 export async function sendCommand(
   redisConn: Deno.Conn,
@@ -118,23 +117,15 @@ export async function sendCommand(
  *
  * Example:
  * ```ts
- * import { pipelineCommands } from "https://deno.land/x/r2d2/mod.ts";
- *
  * const redisConn = await Deno.connect({ port: 6379 });
  *
- * // Resolves to [1, 2, 3, 4]
  * await pipelineCommands(redisConn, [
  *  ["INCR", "X"],
  *  ["INCR", "X"],
  *  ["INCR", "X"],
  *  ["INCR", "X"],
- * ]);
+ * ]); // Returns [1, 2, 3, 4]
  * ```
- *
- * @param redisConn Redis connection to the server
- * @param commands An array of Redis commands
- * @param echo If `true`, replies are read. Defaults to true.
- * @returns Parsed Redis replies
  */
 export async function pipelineCommands(
   redisConn: Deno.Conn,

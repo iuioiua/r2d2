@@ -1,29 +1,34 @@
 # r2d2
 
-Simple, lightweight Redis client library for Deno.
+Lightweight Redis client library for Deno. Design principles:
+
+- Must be fundamentally simple
+- Use native Deno APIs and [Deno's standard library](https://deno.land/std)
+  without custom interfaces
+- Encourage use of actual Redis commands without intermediate abstractions
 
 ## Usage
+
+Must be run with `--allow-net` permission.
 
 ### Basic commands
 
 ```ts
 import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
 
-const redisConn = await Deno.connect({ port: 6379 });
+const redisConn = await Deno.connect({ port: 6379 }); // Connect to the Redis server
 
-/** Resolves to "OK" */
-await sendCommand(redisConn, ["SET", "hello", "world"]);
+await sendCommand(redisConn, ["SET", "hello", "world"]); // Returns "OK"
 
-/** Prints "world" */
-console.log(await sendCommand(redisConn, ["GET", "hello"]));
+await sendCommand(redisConn, ["GET", "hello"]); // Returns "world"
 
-redisConn.close();
+redisConn.close(); // Close the connection to the Redis server
 ```
 
 If you'd like to ignore the reply.
 
 ```ts
-await sendCommand(redis, ["SHUTDOWN"], false);
+await sendCommand(redis, ["SHUTDOWN"], false); // Returns nothing
 ```
 
 ### Pipelining
@@ -31,30 +36,20 @@ await sendCommand(redis, ["SHUTDOWN"], false);
 ```ts
 import { pipelineCommands } from "https://deno.land/x/r2d2/mod.ts";
 
-const redisConn = await Deno.connect({ port: 6379 });
+const redisConn = await Deno.connect({ port: 6379 }); // Connect to the Redis server
 
-// Resolves to [1, 2, 3, 4]
 await pipelineCommands(redisConn, [
   ["INCR", "X"],
   ["INCR", "X"],
   ["INCR", "X"],
   ["INCR", "X"],
-]);
+]); // Returns [1, 2, 3, 4]
 ```
 
-## Principles
+## Documentation
 
-1. Designed to be fundamentally simple
-2. Takes advantage of native Deno APIs and
-   [Deno's standard library](https://deno.land/std) without custom classes
-3. Promotes using Redis commands without intermediate abstractions
-
-## Prerequisites
-
-Redis must be installed on your local machine (guide
-[here](https://redis.io/docs/getting-started/installation/)). Doing so enables
-the use of the `redis-server` CLI tool, which is used to start a local Redis
-server for testing and benchmarks.
+Check out the documentation
+[here](https://doc.deno.land/https://deno.land/x/r2d2/mod.ts).
 
 ## Testing
 
@@ -62,8 +57,18 @@ server for testing and benchmarks.
 deno task test
 ```
 
+> Note: Redis must be installed on your local machine. For installation
+> instructions, see [here](https://redis.io/docs/getting-started/installation/).
+
 ## Benchmarks
 
 ```bash
 deno task bench
 ```
+
+> Note: Redis must be installed on your local machine. For installation
+> instructions, see [here](https://redis.io/docs/getting-started/installation/).
+
+## Related
+
+- [redis](https://deno.land/x/redis@v0.26.0) - 🦕 Redis client for Deno 🍕

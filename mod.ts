@@ -23,7 +23,7 @@ async function readLine(bufReader: BufReader): Promise<string | null> {
  *
  * See {@link https://redis.io/docs/reference/protocol-spec/#send-commands-to-a-redis-server}
  */
-function stringifyRequest(command: Command): string {
+function createRequest(command: Command): string {
   let request = "*" + command.length + CRLF;
   for (const arg of command) {
     request += "$" + arg.toString().length + CRLF;
@@ -40,19 +40,19 @@ async function writeRequest(
   await writeAll(conn, encoder.encode(request));
 }
 
-async function readArray(
-  tpReader: TextProtoReader,
-  length: number,
-): Promise<null | Reply[]> {
-  if (length === -1) {
-    return null;
-  }
-  const array = [];
-  for (let i = 0; i < length; i++) {
-    const reply = await readReply(tpReader);
-    array.push(reply);
-  }
-  return array;
+/**
+ * Just writes a command to the Redis server.
+ *
+ * Example:
+ * ```ts
+ * await writeCommand(redisConn, ["SHUTDOWN"]);
+ * ```
+ */
+export async function writeCommand(
+  redisConn: Deno.Conn,
+  command: Command,
+): Promise<void> {
+  await writeRequest(redisConn, createRequest(command));
 }
 
 /**

@@ -146,5 +146,26 @@ export async function pipelineCommands(
     replies.push(await readReply(bufReader));
   }
   return replies;
+}
+
+/**
+ * Used for pub/sub. Listens for replies from the Redis server.
+ *
+ * Example:
+ * ```ts
+ * await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
+ *
+ * for await (const [_, channel, message] of listenReplies(redisConn)) {
+ *   // Prints ["subscribe", "mychannel", 1];
+ *   console.log(`${channel} said ${message}`);
+ * }
+ * ```
+ */
+export async function* listenReplies(
+  redisConn: Deno.Conn,
+): AsyncIterable<Reply> {
+  const bufReader = new BufReader(redisConn);
+  while (true) {
+    yield await readReply(bufReader);
   }
 }

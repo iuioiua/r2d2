@@ -43,7 +43,34 @@ await pipelineCommands(redisConn, [
   ["INCR", "X"],
   ["INCR", "X"],
   ["INCR", "X"],
-]); // Returns [1, 2, 3, 4]
+]);
+```
+
+### Pub/sub
+
+```ts
+import { listenReplies, writeCommand } from "https://deno.land/x/r2d2/mod.ts";
+
+const redisConn = await Deno.connect({ port: 6379 });
+
+await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
+for await (const [_, channel, message] of listenReplies(redisConn)) {
+  // Prints "mychannel" says 1
+  console.log(`${channel} says ${message}`);
+  await writeCommand(redisConn, ["UNSUBSCRIBE"]);
+  break;
+}
+```
+
+### Single command, no reply
+
+```ts
+import { writeCommand } from "https://deno.land/x/r2d2/mod.ts";
+
+const redisConn = await Deno.connect({ port: 6379 });
+
+// Returns nothing
+await writeCommand(redisConn, ["SHUTDOWN"]);
 ```
 
 ## Documentation

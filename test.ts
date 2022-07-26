@@ -91,7 +91,20 @@ Deno.test("sendCommand and pipelineCommands", async (t) => {
     );
   });
 
-  await flushDB();
+Deno.test({
+  name: "listenReplies",
+  async fn() {
+    await SERVER_PROCESS.status();
+    const redisConn = await Deno.connect({ port: REDIS_PORT });
 
-  redisConn.close();
+    await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
+    for await (const reply of listenReplies(redisConn)) {
+      assertEquals(reply, ["subscribe", "mychannel", 1]);
+      await writeCommand(redisConn, ["UNSUBSCRIBE"]);
+      break;
+    }
+
+    await flushDB(redisConn);
+    redisConn.close();
+  },
 });

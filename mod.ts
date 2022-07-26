@@ -34,10 +34,10 @@ function createRequest(command: Command): string {
 
 /** Encodes and sends the request string to the server. */
 async function writeRequest(
-  conn: Deno.Conn,
+  redisConn: Deno.Conn,
   request: string,
 ): Promise<void> {
-  await writeAll(conn, encoder.encode(request));
+  await writeAll(redisConn, encoder.encode(request));
 }
 
 /**

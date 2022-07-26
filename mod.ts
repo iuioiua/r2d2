@@ -32,7 +32,6 @@ function createRequest(command: Command): string {
   return request;
 }
 
-/** Encodes and sends the request string to the server. */
 async function writeRequest(
   redisConn: Deno.Conn,
   request: string,
@@ -106,9 +105,11 @@ async function readReply(bufReader: BufReader): Promise<Reply> {
  * ```ts
  * const redisConn = await Deno.connect({ port: 6379 });
  *
- * await sendCommand(redisConn, ["SET", "hello", "world"]); // Returns "OK"
+ * // Returns "OK"
+ * await sendCommand(redisConn, ["SET", "hello", "world"]);
  *
- * await sendCommand(redisConn, ["GET", "hello"]); // Returns "world"
+ * // Returns "world"
+ * await sendCommand(redisConn, ["GET", "hello"]);
  * ```
  */
 export async function sendCommand(

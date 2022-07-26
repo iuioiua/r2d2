@@ -11,33 +11,28 @@ Lightweight Redis client library for Deno. Design principles:
 
 Must be run with `--allow-net` permission.
 
-### Basic commands
+### Single command
 
 ```ts
 import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
 
-const redisConn = await Deno.connect({ port: 6379 }); // Connect to the Redis server
+const redisConn = await Deno.connect({ port: 6379 });
 
-await sendCommand(redisConn, ["SET", "hello", "world"]); // Returns "OK"
+// Returns "OK"
+await sendCommand(redisConn, ["SET", "hello", "world"]);
 
-await sendCommand(redisConn, ["GET", "hello"]); // Returns "world"
-
-redisConn.close(); // Close the connection to the Redis server
+// Returns "world"
+await sendCommand(redisConn, ["GET", "hello"]);
 ```
 
-If you'd like to ignore the reply.
-
-```ts
-await sendCommand(redis, ["SHUTDOWN"], false); // Returns nothing
-```
-
-### Pipelining
+### Multiple commands (pipelining)
 
 ```ts
 import { pipelineCommands } from "https://deno.land/x/r2d2/mod.ts";
 
-const redisConn = await Deno.connect({ port: 6379 }); // Connect to the Redis server
+const redisConn = await Deno.connect({ port: 6379 });
 
+// Returns [1, 2, 3, 4]
 await pipelineCommands(redisConn, [
   ["INCR", "X"],
   ["INCR", "X"],

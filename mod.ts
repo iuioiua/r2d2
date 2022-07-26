@@ -82,8 +82,17 @@ async function readReply(bufReader: BufReader): Promise<Reply> {
         : /** Skip to reading the next line, which is a string */
           await readReply(bufReader);
     /** Array */
-    case "*":
-      return await readArray(tpReader, Number(removePrefix(line)));
+    case "*": {
+      const length = Number(removePrefix(line));
+      if (length === -1) {
+        return null;
+      }
+      const array: Reply[] = [];
+      for (let i = 0; i < length; i++) {
+        array.push(await readReply(bufReader));
+      }
+      return array;
+    }
     /** No prefix */
     default:
       return line;

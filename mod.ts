@@ -1,4 +1,4 @@
-import { BufReader, TextProtoReader, writeAll } from "./deps.ts";
+import { BufReader, writeAll } from "./deps.ts";
 
 /** Redis command, which is an array of arguments. */
 export type Command = (string | number)[];
@@ -7,14 +7,15 @@ export type Reply = string | number | null | Reply[];
 
 const CRLF = "\r\n";
 const encoder = new TextEncoder();
+const decoder = new TextDecoder();
 
 function removePrefix(line: string): string {
   return line.slice(1);
 }
 
-/** Converts `Deno.Conn` to `TextProtoReader`. */
-function toTpReader(redisConn: Deno.Conn): TextProtoReader {
-  return new TextProtoReader(new BufReader(redisConn));
+async function readLine(bufReader: BufReader): Promise<string | null> {
+  const result = await bufReader.readLine();
+  return decoder.decode(result?.line) ?? null;
 }
 
 /**
@@ -59,8 +60,8 @@ async function readArray(
  *
  * See {@link https://redis.io/docs/reference/protocol-spec/#resp-protocol-description}
  */
-async function readReply(tpReader: TextProtoReader): Promise<Reply> {
-  const line = await tpReader.readLine();
+async function readReply(bufReader: BufReader): Promise<Reply> {
+  const line = await readLine(bufReader);
   if (line === null) {
     return await Promise.reject("No response received from Redis server");
   }
@@ -79,7 +80,7 @@ async function readReply(tpReader: TextProtoReader): Promise<Reply> {
       return Number(removePrefix(line)) === -1
         ? null
         : /** Skip to reading the next line, which is a string */
-          await readReply(tpReader);
+          await readReply(bufReader);
     /** Array */
     case "*":
       return await readArray(tpReader, Number(removePrefix(line)));
@@ -104,12 +105,9 @@ async function readReply(tpReader: TextProtoReader): Promise<Reply> {
 export async function sendCommand(
   redisConn: Deno.Conn,
   command: Command,
-  echo = true,
-): Promise<Reply | void> {
-  await writeRequest(redisConn, stringifyRequest(command));
-  if (echo) {
-    return await readReply(toTpReader(redisConn));
-  }
+): Promise<Reply> {
+  await writeCommand(redisConn, command);
+  return await readReply(new BufReader(redisConn));
 }
 
 /**
@@ -130,17 +128,14 @@ export async function sendCommand(
 export async function pipelineCommands(
   redisConn: Deno.Conn,
   commands: Command[],
-  echo = true,
-): Promise<Reply[] | void> {
-  const request = commands.map(stringifyRequest).join("");
+): Promise<Reply[]> {
+  const request = commands.map(createRequest).join("");
   await writeRequest(redisConn, request);
-  if (echo) {
-    const tpReader = toTpReader(redisConn);
-    const replies: Reply[] = [];
-    for (const _ of commands) {
-      const reply = await readReply(tpReader);
-      replies.push(reply);
-    }
-    return replies;
+  const bufReader = new BufReader(redisConn);
+  const replies: Reply[] = [];
+  for (let i = 0; i < commands.length; i++) {
+    replies.push(await readReply(bufReader));
+  }
+  return replies;
   }
 }

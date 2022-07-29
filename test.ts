@@ -7,18 +7,18 @@ import {
   sendCommand,
   writeCommand,
 } from "./mod.ts";
-import { REDIS_PORT, SERVER_PROCESS } from "./_util.ts";
+
+const REDIS_PORT = 6379;
 
 async function flushDB(redisConn: Deno.Conn): Promise<void> {
   await sendCommand(redisConn, ["FLUSHDB"]);
 }
 
+const redisConn = await Deno.connect({ port: REDIS_PORT });
+
 Deno.test({
   name: "sendCommand",
   async fn(t) {
-    await SERVER_PROCESS.status();
-    const redisConn = await Deno.connect({ port: REDIS_PORT });
-
     async function sendCommandTest(
       command: Command,
       expected: Reply,
@@ -84,16 +84,12 @@ Deno.test({
     });
 
     await flushDB(redisConn);
-    redisConn.close();
   },
 });
 
 Deno.test({
   name: "pipelineCommands",
   async fn() {
-    await SERVER_PROCESS.status();
-    const redisConn = await Deno.connect({ port: REDIS_PORT });
-
     await flushDB(redisConn);
 
     assertEquals(
@@ -109,15 +105,13 @@ Deno.test({
     );
 
     await flushDB(redisConn);
-    redisConn.close();
   },
 });
 
 Deno.test({
   name: "listenReplies",
   async fn() {
-    await SERVER_PROCESS.status();
-    const redisConn = await Deno.connect({ port: REDIS_PORT });
+    await flushDB(redisConn);
 
     await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
     for await (const reply of listenReplies(redisConn)) {
@@ -127,6 +121,10 @@ Deno.test({
     }
 
     await flushDB(redisConn);
-    redisConn.close();
   },
+});
+
+addEventListener("unload", async () => {
+  await writeCommand(redisConn, ["SHUTDOWN"]);
+  redisConn.close();
 });

@@ -1,8 +1,7 @@
-import { sendCommand } from "./mod.ts";
+import { sendCommand, writeCommand } from "./mod.ts";
 import { connect } from "./deps.ts";
-import { REDIS_PORT, SERVER_PROCESS } from "./_util.ts";
 
-await SERVER_PROCESS.status();
+const REDIS_PORT = 6379;
 
 const redisConn = await Deno.connect({ port: REDIS_PORT });
 const redis = await connect({
@@ -30,7 +29,8 @@ Deno.bench("redis", async () => {
   await redis.mget("a", "b");
 });
 
-globalThis.addEventListener("unload", () => {
+globalThis.addEventListener("unload", async () => {
   redisConn.close();
+  await writeCommand(redisConn, ["SHUTDOWN"]);
   redis.close();
 });

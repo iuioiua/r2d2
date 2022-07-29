@@ -1,6 +1,7 @@
 {
   "tasks": {
-    "test": "deno test --allow-run=redis-server --allow-net=127.0.0.1 --trace-ops --allow-env=REDIS_PORT",
-    "bench": "deno --unstable bench --allow-run=redis-server --allow-net=127.0.0.1 --allow-env=REDIS_PORT"
+    "dev:redis-server": "redis-server --daemonize yes",
+    "test": "deno task dev:redis-server && deno test --allow-run=redis-server --allow-net=127.0.0.1 --trace-ops --allow-env=REDIS_PORT",
+    "bench": "deno task dev:redis-server && deno --unstable bench --allow-run=redis-server --allow-net=127.0.0.1 --allow-env=REDIS_PORT"
   }
 }

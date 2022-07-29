@@ -32,8 +32,10 @@ Deno.test({
       await sendCommandTest(["PING"], "PONG");
     });
 
-    await t.step("parses error", () => {
-      assertRejects(async () => await sendCommand(redisConn, ["helloworld"]));
+    await t.step("parses error", async () => {
+      await assertRejects(async () =>
+        await sendCommand(redisConn, ["helloworld"])
+      );
     });
 
     await t.step("parses integer", async () => {

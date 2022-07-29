@@ -25,7 +25,18 @@ await sendCommand(redisConn, ["SET", "hello", "world"]);
 await sendCommand(redisConn, ["GET", "hello"]);
 ```
 
-### Multiple commands (pipelining)
+### Single command (no reply)
+
+```ts
+import { writeCommand } from "https://deno.land/x/r2d2/mod.ts";
+
+const redisConn = await Deno.connect({ port: 6379 });
+
+// Returns nothing
+await writeCommand(redisConn, ["SHUTDOWN"]);
+```
+
+### Pipelining
 
 ```ts
 import { pipelineCommands } from "https://deno.land/x/r2d2/mod.ts";
@@ -49,23 +60,10 @@ import { listenReplies, writeCommand } from "https://deno.land/x/r2d2/mod.ts";
 const redisConn = await Deno.connect({ port: 6379 });
 
 await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
-for await (const [_, channel, message] of listenReplies(redisConn)) {
-  // Prints "mychannel" says 1
-  console.log(`${channel} says ${message}`);
-  await writeCommand(redisConn, ["UNSUBSCRIBE"]);
-  break;
+for await (const reply of listenReplies(redisConn)) {
+  // Prints ["subscribe", "mychannel", 1] first iteration
+  console.log(reply);
 }
-```
-
-### Single command, no reply
-
-```ts
-import { writeCommand } from "https://deno.land/x/r2d2/mod.ts";
-
-const redisConn = await Deno.connect({ port: 6379 });
-
-// Returns nothing
-await writeCommand(redisConn, ["SHUTDOWN"]);
 ```
 
 ## Documentation

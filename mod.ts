@@ -127,12 +127,13 @@ export async function sendCommand(
  * ```ts
  * const redisConn = await Deno.connect({ port: 6379 });
  *
+ * // Returns [1, 2, 3, 4]
  * await pipelineCommands(redisConn, [
  *  ["INCR", "X"],
  *  ["INCR", "X"],
  *  ["INCR", "X"],
  *  ["INCR", "X"],
- * ]); // Returns [1, 2, 3, 4]
+ * ]);
  * ```
  */
 export async function pipelineCommands(
@@ -156,9 +157,9 @@ export async function pipelineCommands(
  * ```ts
  * await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
  *
- * for await (const [_, channel, message] of listenReplies(redisConn)) {
- *   // Prints ["subscribe", "mychannel", 1];
- *   console.log(`${channel} said ${message}`);
+ * for await (const reply of listenReplies(redisConn)) {
+ *   // Prints ["subscribe", "mychannel", 1] first iteration
+ *   console.log(reply);
  * }
  * ```
  */

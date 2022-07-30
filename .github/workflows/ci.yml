@@ -8,13 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-
-      matrix:
-        redis-version: [6, 7]
+    runs-on: macos-latest
 
     steps:
       - name: Setup repo
@@ -25,10 +19,8 @@ jobs:
         with:
           deno-version: vx.x.x
 
-      - name: Start Redis
-        uses: supercharge/redis-github-action@1.4.0
-        with:
-          redis-version: ${{ matrix.redis-version }}
+      - name: Setup Redis
+        run: brew install redis
 
       - name: Run tests
         run: deno task test

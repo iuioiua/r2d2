@@ -1,9 +1,7 @@
 {
   "tasks": {
     "start-redis": "redis-server --daemonize yes",
-    "test": "deno test --allow-net=127.0.0.1:6379 --trace-ops",
-    "test:dev": "deno task start-redis && deno task test",
-    "bench": "deno --unstable bench --allow-net=127.0.0.1:6379",
-    "bench:dev": "deno task start-redis && deno task bench"
+    "test": "deno task start-redis && deno test --allow-net=127.0.0.1:6379 --trace-ops",
+    "bench": "deno task start-redis && deno --unstable bench --allow-net=127.0.0.1:6379"
   }
 }

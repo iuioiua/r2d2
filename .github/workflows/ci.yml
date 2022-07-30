@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
 
       matrix:
-        redis-version: [6]
+        redis-version: [6, 7]
 
     steps:
       - name: Setup repo

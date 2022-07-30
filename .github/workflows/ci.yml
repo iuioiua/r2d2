@@ -19,6 +19,12 @@ jobs:
         with:
           deno-version: vx.x.x
 
+      - name: Verify formatting
+        run: deno fmt --check
+
+      - name: Run linter
+        run: deno lint
+
       - name: Setup Redis
         run: brew install redis
 

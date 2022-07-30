@@ -13,6 +13,8 @@ jobs:
 
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
+        redis-version: [6]
+
 
     runs-on: ${{ matrix.os }}
 
@@ -25,25 +27,10 @@ jobs:
         with:
           deno-version: vx.x.x
 
-      - name: Install redis on macOS
-        if: matrix.os == 'macos-latest'
-        run: brew install redis
-
-      - name: Install redis on Ubuntu
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
-          sudo apt-get update
-          sudo apt-get install redis
-
-      - name: Install redis on Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
-          sudo apt-get update
-          sudo apt-get install redis
+      - name: Start Redis
+        uses: supercharge/redis-github-action@1.4.0
+        with:
+          redis-version: ${{ matrix.redis-version }}
 
       - name: Run tests
         run: deno task test

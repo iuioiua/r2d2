@@ -75,7 +75,7 @@ Check out the documentation
 ## Testing
 
 ```bash
-deno task test
+deno task test:dev
 ```
 
 > Note: Redis must be installed on your local machine. For installation
@@ -84,7 +84,7 @@ deno task test
 ## Benchmarks
 
 ```bash
-deno task bench
+deno task bench:dev
 ```
 
 > Note: Redis must be installed on your local machine. For installation

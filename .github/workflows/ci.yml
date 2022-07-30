@@ -8,15 +8,13 @@ on:
 
 jobs:
   test:
+    runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
 
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
         redis-version: [6]
-
-
-    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Setup repo

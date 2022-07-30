@@ -9,7 +9,7 @@ principles:
 - Must be fundamentally simple
 - Use native Deno APIs and [Deno's standard library](https://deno.land/std)
   without custom interfaces
-- Encourage use of actual Redis commands without intermediate abstractions
+- Encourage the use of actual Redis commands without intermediate abstractions
 
 ## Usage
 
@@ -99,8 +99,8 @@ These resources, one way or another, inspired the creation of this module. If
 you're one of the authors, thank you.
 
 - [redis](https://deno.land/x/redis) - 🦕 Redis client for Deno 🍕
-- [tiny-redis](https://github.com/qingant/tiny-redis) - TinyRedis is a redis
-  server and redis protocol facilities developed with TypeScript and platformed
+- [tiny-redis](https://github.com/qingant/tiny-redis) - TinyRedis is a Redis
+  server and Redis protocol facilities developed with TypeScript and platformed
   on Deno.
 - [Native GET and SET operations on REDIS](https://medium.com/deno-the-complete-reference/native-get-and-set-operations-on-redis-c6cd34df1e90) -
-  article with a selft-explanatory title.
+  article with a self-explanatory title.

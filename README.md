@@ -1,5 +1,8 @@
 # r2d2
 
+[![Docs](https://doc.deno.land/badge.svg)](https://doc.deno.land/https://deno.land/x/r2d2/mod.ts)
+[![CI](https://github.com/iuioiua/r2d2/actions/workflows/ci.yml/badge.svg)](https://github.com/iuioiua/r2d2/actions/workflows/ci.yml)
+
 Lightweight Redis client library for [Deno](https://deno.land/). Design
 principles:
 

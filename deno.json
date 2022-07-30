@@ -1,7 +1,8 @@
 {
   "tasks": {
-    "start-redis": "rm -f dump.rdb && redis-server --daemonize yes",
-    "test": "deno task start-redis && deno test --allow-net=127.0.0.1:6379 --trace-ops",
-    "bench": "deno task start-redis && deno --unstable bench --allow-net=127.0.0.1:6379"
+    "redis:clear": "rm -f dump.rdb",
+    "redis:start": "deno task redis:clear && redis-server --daemonize yes",
+    "test": "deno task redis:start && deno test --allow-net=127.0.0.1:6379 --trace-ops",
+    "bench": "deno task redis:start && deno --unstable bench --allow-net=127.0.0.1:6379"
   }
 }

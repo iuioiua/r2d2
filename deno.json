@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "start-redis": "redis-server --daemonize yes",
+    "start-redis": "rm -f dump.rdb && redis-server --daemonize yes",
     "test": "deno task start-redis && deno test --allow-net=127.0.0.1:6379 --trace-ops",
     "bench": "deno task start-redis && deno --unstable bench --allow-net=127.0.0.1:6379"
   }

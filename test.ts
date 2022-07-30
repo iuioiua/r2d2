@@ -19,13 +19,7 @@ async function sendCommandTest(
   assertEquals(await sendCommand(redisConn, command), expected);
 }
 
-async function flush(): Promise<void> {
-  await sendCommand(redisConn, ["FLUSHDB"]);
-}
-
 Deno.test("r2d2", async (t) => {
-  await flush();
-
   await t.step("sendCommand parses simple string", async () => {
     await sendCommandTest(["PING"], "PONG");
   });
@@ -103,8 +97,6 @@ Deno.test("r2d2", async (t) => {
       break;
     }
   });
-
-  await flush();
 });
 
 addEventListener("unload", async () => {

@@ -40,6 +40,22 @@ const redisConn = await Deno.connect({ port: 6379 });
 await writeCommand(redisConn, ["SHUTDOWN"]);
 ```
 
+### Raw data
+
+```ts
+import { sendCommand, sendCommandRawReply } from "https://deno.land/x/r2d2/mod.ts";
+
+const redisConn = await Deno.connect({ port: 6379 });
+
+const value = new Uint8Array([0, 1, 2, 1, 2, 1, 2, 3]);
+
+// Returns "OK"
+await sendCommand(redisConn, ["SET", "binary", value]);
+
+// Returns Uint8Array(8) [0, 1, 2, 1, 2, 1, 2, 3]
+await sendCommandRawReply(redisConn, ["GET", "binary"]);
+```
+
 ### Pipelining
 
 ```ts

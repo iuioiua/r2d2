@@ -1,36 +1,72 @@
-import { sendCommand, writeCommand } from "./mod.ts";
+import { pipelineCommands, sendCommand } from "./mod.ts";
 import { connect } from "./deps.ts";
+import { close, PORT } from "./_utils.ts";
 
-const REDIS_PORT = 6379;
-
-const redisConn = await Deno.connect({ port: REDIS_PORT });
+const redisConn = await Deno.connect({ port: PORT });
 const redis = await connect({
   hostname: "127.0.0.1",
-  port: REDIS_PORT,
+  port: PORT,
 });
 
-Deno.bench("r2d2", { baseline: true }, async () => {
-  await sendCommand(redisConn, ["PING"]);
+Deno.bench(
+  "r2d2 PING/PONG",
+  { group: "PING/PONG", baseline: true },
+  async () => {
+    await sendCommand(redisConn, ["PING"]);
+  },
+);
 
+Deno.bench("redis PING/PONG", { group: "PING/PONG" }, async () => {
+  await redis.ping();
+});
+
+Deno.bench("r2d2 SET/GET", { group: "SET/GET", baseline: true }, async () => {
   await sendCommand(redisConn, ["SET", "mykey", "Hello"]);
   await sendCommand(redisConn, ["GET", "mykey"]);
-
-  await sendCommand(redisConn, ["MSET", "a", "foo", "b", "bar"]);
-  await sendCommand(redisConn, ["MGET", "a", "b"]);
 });
 
-Deno.bench("redis", async () => {
-  await redis.ping();
-
+Deno.bench("redis SET/GET", { group: "SET/GET" }, async () => {
   await redis.set("mykey", "Hello");
   await redis.get("mykey");
+});
 
+Deno.bench(
+  "r2d2 MSET/MGET",
+  { group: "MSET/MGET", baseline: true },
+  async () => {
+    await sendCommand(redisConn, ["MSET", "a", "foo", "b", "bar"]);
+    await sendCommand(redisConn, ["MGET", "a", "b"]);
+  },
+);
+
+Deno.bench("redis MSET/MGET", { group: "MSET/MGET" }, async () => {
   await redis.mset({ a: "foo", b: "bar" });
   await redis.mget("a", "b");
 });
 
-globalThis.addEventListener("unload", async () => {
+Deno.bench(
+  "r2d2 pipelining",
+  { group: "pipelining", baseline: true },
+  async () => {
+    await pipelineCommands(redisConn, [
+      ["INCR", "X"],
+      ["INCR", "X"],
+      ["INCR", "X"],
+      ["INCR", "X"],
+    ]);
+  },
+);
+
+Deno.bench("redis pipelining", { group: "pipelining" }, async () => {
+  const pl = redis.pipeline();
+  pl.incr("X");
+  pl.incr("X");
+  pl.incr("X");
+  pl.incr("X");
+  await pl.flush();
+});
+
+addEventListener("unload", async () => {
   redisConn.close();
-  await writeCommand(redisConn, ["SHUTDOWN"]);
-  redis.close();
+  await close(redisConn);
 });

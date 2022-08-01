@@ -15,7 +15,7 @@ principles:
 
 Must be run with `--allow-net` permission.
 
-### Send command
+### Basic commands
 
 ```ts
 import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
@@ -29,7 +29,7 @@ await sendCommand(redisConn, ["SET", "hello", "world"]);
 await sendCommand(redisConn, ["GET", "hello"]);
 ```
 
-### Send command (no reply)
+If you don't care about the reply:
 
 ```ts
 import { writeCommand } from "https://deno.land/x/r2d2/mod.ts";

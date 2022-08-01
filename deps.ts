@@ -1,5 +1,6 @@
 export { writeAll } from "https://deno.land/std@0.150.0/streams/conversion.ts";
 export { BufReader } from "https://deno.land/std@0.150.0/io/buffer.ts";
+export { concat } from "https://deno.land/std@0.150.0/bytes/mod.ts";
 
 /** Testing */
 export {

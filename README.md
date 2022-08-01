@@ -43,7 +43,10 @@ await writeCommand(redisConn, ["SHUTDOWN"]);
 ### Raw data
 
 ```ts
-import { sendCommand, sendCommandRawReply } from "https://deno.land/x/r2d2/mod.ts";
+import {
+  sendCommand,
+  sendCommandRawReply,
+} from "https://deno.land/x/r2d2/mod.ts";
 
 const redisConn = await Deno.connect({ port: 6379 });
 

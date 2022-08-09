@@ -70,5 +70,4 @@ addEventListener("unload", async () => {
   redis.close();
   await writeCommand(redisConn, ["SHUTDOWN"]);
   redisConn.close();
-  await close(redisConn);
 });

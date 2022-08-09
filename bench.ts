@@ -1,6 +1,7 @@
 import { pipelineCommands, sendCommand, writeCommand } from "./mod.ts";
 import { connect } from "./deps.ts";
-import { PORT } from "./test.ts";
+
+const PORT = 6379;
 
 const redisConn = await Deno.connect({ port: PORT });
 const redis = await connect({

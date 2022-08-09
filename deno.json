@@ -1,8 +1,15 @@
 {
   "tasks": {
-    "redis:clear": "rm -f dump.rdb",
-    "redis:start": "deno task redis:clear && redis-server --daemonize yes",
-    "test": "deno task redis:start && deno test --allow-net=127.0.0.1:6379 --trace-ops --parallel",
-    "bench": "deno task redis:start && deno --unstable bench --allow-net=127.0.0.1:6379"
+    "redis:start": "rm -f dump.rdb && redis-server --daemonize yes",
+    "test": "deno task redis:start && rm -rf cov && deno test --allow-net=127.0.0.1:6379 --trace-ops --coverage=cov test.ts",
+    "bench": "deno task redis:start && deno --unstable bench --allow-net=127.0.0.1:6379",
+    "coverage": "deno coverage cov --exclude=deps.ts,test.ts --lcov > cov.lcov"
+  },
+  "fmt": {
+    "files": {
+      "exclude": [
+        "cov"
+      ]
+    }
   }
 }

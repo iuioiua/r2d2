@@ -30,3 +30,9 @@ jobs:
 
       - name: Run tests
         run: deno task test
+
+      - name: Generate lcov
+        run: deno task coverage
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3

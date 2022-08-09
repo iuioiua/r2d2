@@ -1,6 +1,6 @@
-import { pipelineCommands, sendCommand } from "./mod.ts";
+import { pipelineCommands, sendCommand, writeCommand } from "./mod.ts";
 import { connect } from "./deps.ts";
-import { close, PORT } from "./_utils.ts";
+import { PORT } from "./test.ts";
 
 const redisConn = await Deno.connect({ port: PORT });
 const redis = await connect({
@@ -67,6 +67,8 @@ Deno.bench("redis pipelining", { group: "pipelining" }, async () => {
 });
 
 addEventListener("unload", async () => {
+  redis.close();
+  await writeCommand(redisConn, ["SHUTDOWN"]);
   redisConn.close();
   await close(redisConn);
 });

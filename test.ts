@@ -8,8 +8,9 @@ import {
   sendCommandRawReply,
   writeCommand,
 } from "./mod.ts";
-import { close, PORT } from "./_utils.ts";
 
+/** Default port for Redis. */
+export const PORT = 6379;
 const redisConn = await Deno.connect({ port: PORT });
 
 async function sendCommandTest(
@@ -80,6 +81,12 @@ Deno.test("sendCommandRawReply works", async () => {
   assertEquals(await sendCommandRawReply(redisConn, ["GET", "binary"]), value);
 });
 
+Deno.test("sendCommandRawReply throws on non-bulk-string reply", async () => {
+  await assertRejects(async () =>
+    await sendCommandRawReply(redisConn, ["PING"])
+  );
+});
+
 Deno.test("pipelineCommands works", async () => {
   assertEquals(
     await pipelineCommands(redisConn, [
@@ -94,11 +101,20 @@ Deno.test("pipelineCommands works", async () => {
 
 Deno.test("listenReples works", async () => {
   await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
-  for await (const reply of listenReplies(redisConn)) {
-    assertEquals(reply, ["subscribe", "mychannel", 1]);
-    await writeCommand(redisConn, ["UNSUBSCRIBE"]);
-    break;
-  }
+  const iterator = listenReplies(redisConn);
+  assertEquals(await iterator.next(), {
+    value: ["subscribe", "mychannel", 1],
+    done: false,
+  });
+  await writeCommand(redisConn, ["UNSUBSCRIBE"]);
+  assertEquals(await iterator.next(), {
+    value: ["unsubscribe", "mychannel", 0],
+    done: false,
+  });
 });
 
-addEventListener("unload", async () => await close(redisConn));
+Deno.test("any fn throws if no reply", async () => {
+  await assertRejects(async () => await sendCommand(redisConn, ["SHUTDOWN"]));
+});
+
+addEventListener("unload", () => redisConn.close());

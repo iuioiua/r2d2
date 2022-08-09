@@ -5,6 +5,13 @@ export type Command = (string | number | Uint8Array)[];
 /** Parsed Redis reply */
 export type Reply = string | number | null | Reply[];
 
+const PREFIXES = {
+  SIMPLE_STRING: "+",
+  ERROR: "-",
+  INTEGER: ":",
+  BULK_STRING: "$",
+  ARRAY: "*",
+};
 const CRLF = "\r\n";
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -14,8 +21,7 @@ function removePrefix(line: string): string {
 }
 
 async function readLine(bufReader: BufReader): Promise<ReadLineResult> {
-  const result = await bufReader.readLine();
-  return result ??
+  return await bufReader.readLine() ??
     await Promise.reject("No reply received from Redis server");
 }
 
@@ -26,12 +32,12 @@ async function readLine(bufReader: BufReader): Promise<ReadLineResult> {
  */
 function createRequest(command: Command): Uint8Array {
   const parts: Uint8Array[] = [];
-  parts.push(encoder.encode("*" + command.length + CRLF));
+  parts.push(encoder.encode(PREFIXES.ARRAY + command.length + CRLF));
   for (const arg of command) {
     const bytes = arg instanceof Uint8Array
       ? arg
       : encoder.encode(arg.toString());
-    parts.push(encoder.encode("$" + bytes.byteLength + CRLF));
+    parts.push(encoder.encode(PREFIXES.BULK_STRING + bytes.byteLength + CRLF));
     parts.push(bytes);
     parts.push(encoder.encode(CRLF));
   }
@@ -62,23 +68,18 @@ async function readReply(bufReader: BufReader): Promise<Reply> {
   const result = await readLine(bufReader);
   const line = decoder.decode(result.line);
   switch (line.charAt(0)) {
-    /** Simple string */
-    case "+":
+    case PREFIXES.SIMPLE_STRING:
       return removePrefix(line);
-    /** Error */
-    case "-":
+    case PREFIXES.ERROR:
       return await Promise.reject(removePrefix(line));
-    /** Integer */
-    case ":":
+    case PREFIXES.INTEGER:
       return Number(removePrefix(line));
-    /** Bulk string */
-    case "$":
+    case PREFIXES.BULK_STRING:
       return Number(removePrefix(line)) === -1
         ? null
         : /** Skip to reading the next line, which is a string */
           await readReply(bufReader);
-    /** Array */
-    case "*": {
+    case PREFIXES.ARRAY: {
       const length = Number(removePrefix(line));
       if (length === -1) {
         return null;
@@ -119,7 +120,7 @@ export async function sendCommand(
 
 async function readRawReply(bufReader: BufReader): Promise<Uint8Array> {
   const result = await readLine(bufReader);
-  return decoder.decode(result.line).startsWith("$")
+  return decoder.decode(result.line).startsWith(PREFIXES.BULK_STRING)
     ? (await readLine(bufReader))!.line
     : await Promise.reject("Reply must be a bulk string");
 }

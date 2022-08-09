@@ -1,4 +1,4 @@
-import { BufReader, concat, writeAll } from "./deps.ts";
+import { BufReader, concat, type ReadLineResult, writeAll } from "./deps.ts";
 
 /** Redis command, which is an array of arguments. */
 export type Command = (string | number | Uint8Array)[];
@@ -13,8 +13,14 @@ function removePrefix(line: string): string {
   return line.slice(1);
 }
 
+async function readLine(bufReader: BufReader): Promise<ReadLineResult> {
+  const result = await bufReader.readLine();
+  return result ??
+    await Promise.reject("No reply received from Redis server");
+}
+
 /**
- * Transforms a command, which is an array of arguments, into an RESP request string.
+ * Transforms a command, which is an array of arguments, into an RESP request.
  *
  * See {@link https://redis.io/docs/reference/protocol-spec/#send-commands-to-a-redis-server}
  */
@@ -25,7 +31,7 @@ function createRequest(command: Command): Uint8Array {
     const bytes = arg instanceof Uint8Array
       ? arg
       : encoder.encode(arg.toString());
-    parts.push(encoder.encode("$" + bytes.byteLength.toString() + CRLF));
+    parts.push(encoder.encode("$" + bytes.byteLength + CRLF));
     parts.push(bytes);
     parts.push(encoder.encode(CRLF));
   }
@@ -53,10 +59,7 @@ export async function writeCommand(
  * See {@link https://redis.io/docs/reference/protocol-spec/#resp-protocol-description}
  */
 async function readReply(bufReader: BufReader): Promise<Reply> {
-  const result = await bufReader.readLine();
-  if (result === null) {
-    return await Promise.reject("No response received from Redis server");
-  }
+  const result = await readLine(bufReader);
   const line = decoder.decode(result.line);
   switch (line.charAt(0)) {
     /** Simple string */
@@ -115,14 +118,10 @@ export async function sendCommand(
 }
 
 async function readRawReply(bufReader: BufReader): Promise<Uint8Array> {
-  const result = await bufReader.readLine();
-  if (result === null) {
-    return await Promise.reject("No response received from Redis server");
-  }
-  if (!decoder.decode(result.line).startsWith("$")) {
-    return await Promise.reject("Reply must be a bulk string");
-  }
-  return (await bufReader.readLine())!.line;
+  const result = await readLine(bufReader);
+  return decoder.decode(result.line).startsWith("$")
+    ? (await readLine(bufReader))!.line
+    : await Promise.reject("Reply must be a bulk string");
 }
 
 /**
@@ -194,7 +193,7 @@ export async function pipelineCommands(
  */
 export async function* listenReplies(
   redisConn: Deno.Conn,
-): AsyncIterable<Reply> {
+): AsyncIterableIterator<Reply> {
   const bufReader = new BufReader(redisConn);
   while (true) {
     yield await readReply(bufReader);

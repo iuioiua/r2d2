@@ -58,6 +58,47 @@ export async function writeCommand(
   await writeAll(redisConn, createRequest(command));
 }
 
+function readSimpleString(line: string): string {
+  return removePrefix(line);
+}
+
+async function readError(line: string): Promise<never> {
+  return await Promise.reject(removePrefix(line));
+}
+
+function readInteger(line: string): number {
+  return Number(removePrefix(line));
+}
+
+async function readBulkString(
+  line: string,
+  bufReader: BufReader,
+): Promise<null | string> {
+  return readInteger(line) === -1
+    ? null
+    : /** Skip to reading the next line, which is a string */
+      await readReply(bufReader) as string;
+}
+
+async function readRepliesN(
+  length: number,
+  bufReader: BufReader,
+): Promise<Reply[]> {
+  const array: Reply[] = [];
+  for (let i = 0; i < length; i++) {
+    array.push(await readReply(bufReader));
+  }
+  return array;
+}
+
+async function readArray(
+  line: string,
+  bufReader: BufReader,
+): Promise<null | Reply[]> {
+  const length = readInteger(line);
+  return length === -1 ? null : await readRepliesN(length, bufReader);
+}
+
 /**
  * Reads and processes the response line-by-line.
  *
@@ -68,27 +109,15 @@ async function readReply(bufReader: BufReader): Promise<Reply> {
   const line = decoder.decode(result.line);
   switch (line.charAt(0)) {
     case SIMPLE_STRING_PREFIX:
-      return removePrefix(line);
+      return readSimpleString(line);
     case ERROR_PREFIX:
-      return await Promise.reject(removePrefix(line));
+      return readError(line);
     case INTEGER_PREFIX:
-      return Number(removePrefix(line));
+      return readInteger(line);
     case BULK_STRING_PREFIX:
-      return Number(removePrefix(line)) === -1
-        ? null
-        : /** Skip to reading the next line, which is a string */
-          await readReply(bufReader);
-    case ARRAY_PREFIX: {
-      const length = Number(removePrefix(line));
-      if (length === -1) {
-        return null;
-      }
-      const array: Reply[] = [];
-      for (let i = 0; i < length; i++) {
-        array.push(await readReply(bufReader));
-      }
-      return array;
-    }
+      return await readBulkString(line, bufReader);
+    case ARRAY_PREFIX:
+      return await readArray(line, bufReader);
     /** No prefix */
     default:
       return line;
@@ -119,7 +148,8 @@ export async function sendCommand(
 
 async function readRawReply(bufReader: BufReader): Promise<Uint8Array> {
   const result = await readLine(bufReader);
-  return decoder.decode(result.line).startsWith(BULK_STRING_PREFIX)
+  const line = decoder.decode(result.line);
+  return line.startsWith(BULK_STRING_PREFIX)
     ? (await readLine(bufReader))!.line
     : await Promise.reject("Reply must be a bulk string");
 }
@@ -170,12 +200,7 @@ export async function pipelineCommands(
 ): Promise<Reply[]> {
   const request = concat(...commands.map(createRequest));
   await writeAll(redisConn, request);
-  const bufReader = new BufReader(redisConn);
-  const replies: Reply[] = [];
-  for (let i = 0; i < commands.length; i++) {
-    replies.push(await readReply(bufReader));
-  }
-  return replies;
+  return readRepliesN(commands.length, new BufReader(redisConn));
 }
 
 /**

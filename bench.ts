@@ -10,46 +10,66 @@ const redis = await connect({
   port: PORT,
 });
 
-Deno.bench(
-  "r2d2 PING/PONG",
-  { group: "PING/PONG", baseline: true },
-  async () => {
+Deno.bench({
+  name: "r2d2 PING/PONG",
+  group: "PING/PONG",
+  baseline: true,
+  async fn() {
     await sendCommand(redisConn, ["PING"]);
   },
-);
-
-Deno.bench("redis PING/PONG", { group: "PING/PONG" }, async () => {
-  await redis.ping();
 });
 
-Deno.bench("r2d2 SET/GET", { group: "SET/GET", baseline: true }, async () => {
-  await sendCommand(redisConn, ["SET", "mykey", "Hello"]);
-  await sendCommand(redisConn, ["GET", "mykey"]);
+Deno.bench({
+  name: "redis PING/PONG",
+  group: "PING/PONG",
+  async fn() {
+    await redis.ping();
+  },
 });
 
-Deno.bench("redis SET/GET", { group: "SET/GET" }, async () => {
-  await redis.set("mykey", "Hello");
-  await redis.get("mykey");
+Deno.bench({
+  name: "r2d2 SET/GET",
+  group: "SET/GET",
+  baseline: true,
+  async fn() {
+    await sendCommand(redisConn, ["SET", "mykey", "Hello"]);
+    await sendCommand(redisConn, ["GET", "mykey"]);
+  },
 });
 
-Deno.bench(
-  "r2d2 MSET/MGET",
-  { group: "MSET/MGET", baseline: true },
-  async () => {
+Deno.bench({
+  name: "redis SET/GET",
+  group: "SET/GET",
+  async fn() {
+    await redis.set("mykey", "Hello");
+    await redis.get("mykey");
+  },
+});
+
+Deno.bench({
+  name: "r2d2 MSET/MGET",
+  group: "MSET/MGET",
+  baseline: true,
+  async fn() {
     await sendCommand(redisConn, ["MSET", "a", "foo", "b", "bar"]);
     await sendCommand(redisConn, ["MGET", "a", "b"]);
   },
-);
-
-Deno.bench("redis MSET/MGET", { group: "MSET/MGET" }, async () => {
-  await redis.mset({ a: "foo", b: "bar" });
-  await redis.mget("a", "b");
 });
 
-Deno.bench(
-  "r2d2 pipelining",
-  { group: "pipelining", baseline: true },
-  async () => {
+Deno.bench({
+  name: "redis MSET/MGET",
+  group: "MSET/MGET",
+  async fn() {
+    await redis.mset({ a: "foo", b: "bar" });
+    await redis.mget("a", "b");
+  },
+});
+
+Deno.bench({
+  name: "r2d2 pipelining",
+  group: "pipelining",
+  baseline: true,
+  async fn() {
     await pipelineCommands(redisConn, [
       ["INCR", "X"],
       ["INCR", "X"],
@@ -57,15 +77,19 @@ Deno.bench(
       ["INCR", "X"],
     ]);
   },
-);
+});
 
-Deno.bench("redis pipelining", { group: "pipelining" }, async () => {
-  const pl = redis.pipeline();
-  pl.incr("X");
-  pl.incr("X");
-  pl.incr("X");
-  pl.incr("X");
-  await pl.flush();
+Deno.bench({
+  name: "redis pipelining",
+  group: "pipelining",
+  async fn() {
+    const pl = redis.pipeline();
+    pl.incr("X");
+    pl.incr("X");
+    pl.incr("X");
+    pl.incr("X");
+    await pl.flush();
+  },
 });
 
 addEventListener("unload", async () => {

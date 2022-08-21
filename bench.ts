@@ -80,6 +80,18 @@ Deno.bench({
 });
 
 Deno.bench({
+  name: "r2d2 multiple commands (non-pipelining)",
+  group: "pipelining",
+  baseline: true,
+  async fn() {
+    await sendCommand(redisConn, ["INCR", "X"]);
+    await sendCommand(redisConn, ["INCR", "X"]);
+    await sendCommand(redisConn, ["INCR", "X"]);
+    await sendCommand(redisConn, ["INCR", "X"]);
+  },
+});
+
+Deno.bench({
   name: "redis pipelining",
   group: "pipelining",
   async fn() {

@@ -1,7 +1,7 @@
-import { BufReader, concat, type ReadLineResult, writeAll } from "./deps.ts";
+import { BufReader, concat, writeAll } from "./deps.ts";
 
 /** Redis command, which is an array of arguments. */
-export type Command = (string | number | Uint8Array)[];
+export type Command = (string | number)[];
 /** Parsed Redis reply */
 export type Reply = string | number | null | Reply[];
 
@@ -19,28 +19,18 @@ function removePrefix(line: string): string {
   return line.slice(1);
 }
 
-async function readLine(bufReader: BufReader): Promise<ReadLineResult> {
-  return await bufReader.readLine() ??
-    await Promise.reject("No reply received from Redis server");
-}
-
 /**
  * Transforms a command, which is an array of arguments, into an RESP request.
  *
  * See {@link https://redis.io/docs/reference/protocol-spec/#send-commands-to-a-redis-server}
  */
 function createRequest(command: Command): Uint8Array {
-  const parts: Uint8Array[] = [];
-  parts.push(encoder.encode(ARRAY_PREFIX + command.length + CRLF));
+  let request = ARRAY_PREFIX + command.length + CRLF;
   for (const arg of command) {
-    const bytes = arg instanceof Uint8Array
-      ? arg
-      : encoder.encode(arg.toString());
-    parts.push(encoder.encode(BULK_STRING_PREFIX + bytes.byteLength + CRLF));
-    parts.push(bytes);
-    parts.push(encoder.encode(CRLF));
+    request += BULK_STRING_PREFIX + arg.toString().length + CRLF;
+    request += arg + CRLF;
   }
-  return concat(...parts);
+  return encoder.encode(request);
 }
 
 /**
@@ -105,7 +95,10 @@ async function readArray(
  * See {@link https://redis.io/docs/reference/protocol-spec/#resp-protocol-description}
  */
 async function readReply(bufReader: BufReader): Promise<Reply> {
-  const result = await readLine(bufReader);
+  const result = await bufReader.readLine();
+  if (!result) {
+    return await Promise.reject("No reply received from Redis server");
+  }
   const line = decoder.decode(result.line);
   switch (line.charAt(0)) {
     case SIMPLE_STRING_PREFIX:
@@ -144,38 +137,6 @@ export async function sendCommand(
 ): Promise<Reply> {
   await writeCommand(redisConn, command);
   return await readReply(new BufReader(redisConn));
-}
-
-async function readRawReply(bufReader: BufReader): Promise<Uint8Array> {
-  const result = await readLine(bufReader);
-  const line = decoder.decode(result.line);
-  return line.startsWith(BULK_STRING_PREFIX)
-    ? (await readLine(bufReader))!.line
-    : await Promise.reject("Reply must be a bulk string");
-}
-
-/**
- * Sends a command to the Redis server and returns the raw reply.
- *
- * Example:
- * ```ts
- * const redisConn = await Deno.connect({ port: 6379 });
- *
- * const value = new Uint8Array([0, 1, 2, 1, 2, 1, 2, 3]);
- *
- * // Returns "OK"
- * await sendCommand(redisConn, ["SET", "binary", value]);
- *
- * // Returns Uint8Array(8) [0, 1, 2, 1, 2, 1, 2, 3]
- * await sendCommandRawReply(redisConn, ["GET", "binary"]);
- * ```
- */
-export async function sendCommandRawReply(
-  redisConn: Deno.Conn,
-  command: Command,
-): Promise<Uint8Array> {
-  await writeCommand(redisConn, command);
-  return await readRawReply(new BufReader(redisConn));
 }
 
 /**

@@ -38,9 +38,5 @@ jobs:
       - name: Upload coverage
         uses: codecov/codecov-action@v3
 
-  bench:
-    runs-on: macos-latest
-
-    steps:
       - name: Run benchmarks
         run: deno task bench

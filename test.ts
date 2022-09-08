@@ -5,7 +5,6 @@ import {
   pipelineCommands,
   type Reply,
   sendCommand,
-  sendCommandRawReply,
   writeCommand,
 } from "./mod.ts";
 
@@ -73,18 +72,6 @@ Deno.test("sendCommand works with transactions", async () => {
   await sendCommandTest(["INCR", "FOO"], "QUEUED");
   await sendCommandTest(["INCR", "BAR"], "QUEUED");
   await sendCommandTest(["EXEC"], [1, 1]);
-});
-
-Deno.test("sendCommandRawReply works", async () => {
-  const value = new Uint8Array([0, 1, 2, 1, 2, 1, 2, 3]);
-  await sendCommandTest(["SET", "binary", value], "OK");
-  assertEquals(await sendCommandRawReply(redisConn, ["GET", "binary"]), value);
-});
-
-Deno.test("sendCommandRawReply throws on non-bulk-string reply", async () => {
-  await assertRejects(async () =>
-    await sendCommandRawReply(redisConn, ["PING"])
-  );
 });
 
 Deno.test("pipelineCommands works", async () => {

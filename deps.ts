@@ -1,8 +1,5 @@
 export { writeAll } from "https://deno.land/std@0.154.0/streams/conversion.ts";
-export {
-  BufReader,
-  type ReadLineResult,
-} from "https://deno.land/std@0.154.0/io/buffer.ts";
+export { BufReader } from "https://deno.land/std@0.154.0/io/buffer.ts";
 export { concat } from "https://deno.land/std@0.154.0/bytes/mod.ts";
 
 /** Testing */

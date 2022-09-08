@@ -38,6 +38,10 @@ function createRequest(command: Command): Uint8Array {
  *
  * Example:
  * ```ts
+ * import { writeCommand } from "https://deno.land/x/r2d2/mod.ts";
+ *
+ * const redisConn = await Deno.connect({ port: 6379 });
+ *
  * await writeCommand(redisConn, ["SHUTDOWN"]);
  * ```
  */
@@ -122,6 +126,8 @@ async function readReply(bufReader: BufReader): Promise<Reply> {
  *
  * Example:
  * ```ts
+ * import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+ *
  * const redisConn = await Deno.connect({ port: 6379 });
  *
  * // Returns "OK"
@@ -144,6 +150,8 @@ export async function sendCommand(
  *
  * Example:
  * ```ts
+ * import { pipelineCommands } from "https://deno.land/x/r2d2/mod.ts";
+ *
  * const redisConn = await Deno.connect({ port: 6379 });
  *
  * // Returns [1, 2, 3, 4]
@@ -169,6 +177,10 @@ export async function pipelineCommands(
  *
  * Example:
  * ```ts
+ * import { writeCommand, listenReplies } from "https://deno.land/x/r2d2/mod.ts";
+ *
+ * const redisConn = await Deno.connect({ port: 6379 });
+ *
  * await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
  *
  * for await (const reply of listenReplies(redisConn)) {

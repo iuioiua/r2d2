@@ -38,7 +38,7 @@ function createRequest(command: Command): Uint8Array {
  *
  * Example:
  * ```ts
- * import { writeCommand } from "https://deno.land/x/r2d2/mod.ts";
+ * import { writeCommand } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *
  * const redisConn = await Deno.connect({ port: 6379 });
  *
@@ -70,8 +70,8 @@ async function readBulkString(
 ): Promise<null | string> {
   return readInteger(line) === -1
     ? null
-    : /** Skip to reading the next line, which is a string */
-      await readReply(bufReader) as string;
+    /** Skip to reading the next line, which is a string */
+    : await readReply(bufReader) as string;
 }
 
 async function readRepliesN(
@@ -126,7 +126,7 @@ async function readReply(bufReader: BufReader): Promise<Reply> {
  *
  * Example:
  * ```ts
- * import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+ * import { sendCommand } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *
  * const redisConn = await Deno.connect({ port: 6379 });
  *
@@ -150,7 +150,7 @@ export async function sendCommand(
  *
  * Example:
  * ```ts
- * import { pipelineCommands } from "https://deno.land/x/r2d2/mod.ts";
+ * import { pipelineCommands } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *
  * const redisConn = await Deno.connect({ port: 6379 });
  *
@@ -177,7 +177,7 @@ export async function pipelineCommands(
  *
  * Example:
  * ```ts
- * import { writeCommand, listenReplies } from "https://deno.land/x/r2d2/mod.ts";
+ * import { writeCommand, listenReplies } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *
  * const redisConn = await Deno.connect({ port: 6379 });
  *

@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "https://deno.land/x/r2d2@$VERSION/": "./",
+    "std/": "https://deno.land/std@0.156.0/",
+    "redis/": "https://deno.land/x/redis@v0.27.0/"
+  }
+}

@@ -1,4 +1,4 @@
-import { connect } from "https://deno.land/x/redis@v0.26.0/redis.ts";
+import { connect } from "./deps.ts";
 
 import { pipelineCommands, sendCommand, writeCommand } from "./mod.ts";
 

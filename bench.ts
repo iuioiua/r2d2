@@ -1,4 +1,4 @@
-import { connect } from "./deps.ts";
+import { connect } from "redis/redis.ts";
 
 import { pipelineCommands, sendCommand, writeCommand } from "./mod.ts";
 

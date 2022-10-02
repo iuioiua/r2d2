@@ -1,6 +1,4 @@
-import { writeAll } from "std/streams/conversion.ts";
-import { BufReader } from "std/io/buffer.ts";
-import { concat } from "std/bytes/mod.ts";
+import { BufReader, concat, writeAll } from "./deps.ts";
 
 /** Redis command, which is an array of arguments. */
 export type Command = (string | number)[];

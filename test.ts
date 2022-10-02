@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "std/testing/asserts.ts";
+import { assertEquals, assertRejects } from "./deps.ts";
 
 import {
   type Command,

@@ -1,6 +1,7 @@
 import { type BufReader, chunk } from "../deps.ts";
 import {
   ARRAY_PREFIX,
+  BOOLEAN_PREFIX,
   BULK_STRING_PREFIX,
   decoder,
   ERROR_PREFIX,
@@ -10,7 +11,7 @@ import {
 } from "./constants.ts";
 
 /** Parsed Redis reply */
-export type Reply = string | number | null | Reply[];
+export type Reply = string | number | null | boolean | Reply[];
 
 function removePrefix(line: string): string {
   return line.slice(1);
@@ -63,6 +64,10 @@ async function readMap(line: string, bufReader: BufReader) {
   return Object.fromEntries(chunk(reply, 2));
 }
 
+function readBoolean(line: string): boolean {
+  return removePrefix(line) === "t";
+}
+
 /**
  * Reads and processes the response line-by-line.
  *
@@ -87,6 +92,8 @@ export async function readReply(bufReader: BufReader): Promise<Reply> {
       return await readArray(line, bufReader);
     case MAP_PREFIX:
       return await readMap(line, bufReader);
+    case BOOLEAN_PREFIX:
+      return readBoolean(line);
     /** No prefix */
     default:
       return line;

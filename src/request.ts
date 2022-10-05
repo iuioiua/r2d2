@@ -1,12 +1,13 @@
 import { writeAll } from "../deps.ts";
 import {
   ARRAY_PREFIX,
+  BOOLEAN_PREFIX,
   BULK_STRING_PREFIX,
   CRLF,
   encoder,
 } from "./constants.ts";
 
-type Arg = string | number;
+type Arg = string | number | boolean;
 /** Redis command, which is an array of arguments. */
 export type Command = Arg[];
 
@@ -18,12 +19,19 @@ function serializeInteger(arg: number): string {
   return BULK_STRING_PREFIX + arg.toString().length + CRLF + arg + CRLF;
 }
 
+/** @todo: add test */
+function serializeBoolean(arg: boolean): string {
+  return BOOLEAN_PREFIX + (arg ? "t" : "f") + CRLF;
+}
+
 function serializeArg(arg: Arg): string {
   switch (typeof arg) {
     case "string":
       return serializeBulkString(arg);
     case "number":
       return serializeInteger(arg);
+    case "boolean":
+      return serializeBoolean(arg);
   }
 }
 

@@ -13,6 +13,8 @@ import {
 export const PORT = 6379;
 const redisConn = await Deno.connect({ port: PORT });
 
+await sendCommand(redisConn, ["FLUSHALL"]);
+
 async function sendCommandTest(
   command: Command,
   expected: Reply,
@@ -104,8 +106,13 @@ Deno.test("methods", async (t) => {
   });
 });
 
-Deno.test("RESP3", async () => {
+Deno.test("RESP3", async (t) => {
   await sendCommand(redisConn, ["HELLO", 3]);
+
+  await t.step("boolean", async () => {
+    await sendCommandTest(["EVAL", "redis.setresp(3); return true", 0], true);
+    await sendCommandTest(["EVAL", "redis.setresp(3); return false", 0], false);
+  });
 });
 
 /** This test must be last */

@@ -20,89 +20,93 @@ async function sendCommandTest(
   assertEquals(await sendCommand(redisConn, command), expected);
 }
 
-Deno.test("sendCommand parses simple string", async () => {
-  await sendCommandTest(["PING"], "PONG");
-});
-
-Deno.test("sendCommand parses error", async () => {
-  await assertRejects(async () => await sendCommand(redisConn, ["helloworld"]));
-});
-
-Deno.test("sendCommand parses integer", async () => {
-  await sendCommandTest(["INCR", "integer"], 1);
-  await sendCommandTest(["INCR", "integer"], 2);
-});
-
-Deno.test("sendCommand parses bulk string", async () => {
-  await sendCommand(redisConn, ["SET", "big ups", "west side massive"]);
-  await sendCommandTest(["GET", "big ups"], "west side massive");
-});
-
-Deno.test("sendCommand parses null", async () => {
-  await sendCommandTest(["GET", "nonexistant"], null);
-});
-
-Deno.test("sendCommand parses array", async () => {
-  await sendCommand(redisConn, [
-    "HSET",
-    "hash",
-    "hello",
-    "world",
-    "integer",
-    13,
-  ]);
-  await sendCommandTest([
-    "HMGET",
-    "hash",
-    "hello",
-    "integer",
-    "nonexistant",
-  ], ["world", "13", null]);
-});
-
-Deno.test("sendCommand parses empty array", async () => {
-  await sendCommandTest(["HGETALL", "nonexistant"], []);
-});
-
-Deno.test("sendCommand parses null array", async () => {
-  await sendCommandTest(["BLPOP", "list", 1], null);
-});
-
-Deno.test("sendCommand works with transactions", async () => {
-  await sendCommandTest(["MULTI"], "OK");
-  await sendCommandTest(["INCR", "FOO"], "QUEUED");
-  await sendCommandTest(["INCR", "BAR"], "QUEUED");
-  await sendCommandTest(["EXEC"], [1, 1]);
-});
-
-Deno.test("pipelineCommands works", async () => {
-  assertEquals(
-    await pipelineCommands(redisConn, [
-      ["INCR", "X"],
-      ["INCR", "X"],
-      ["INCR", "X"],
-      ["INCR", "X"],
-    ]),
-    [1, 2, 3, 4],
+Deno.test("RESP v2", async (t) => {
+  await t.step(
+    "simple string",
+    async () => await sendCommandTest(["PING"], "PONG"),
   );
+
+  await t.step("error", async () => {
+    await assertRejects(async () =>
+      await sendCommand(redisConn, ["helloworld"])
+    );
+  });
+
+  await t.step("integer", async () => {
+    await sendCommandTest(["INCR", "integer"], 1);
+    await sendCommandTest(["INCR", "integer"], 2);
+  });
+
+  await t.step("bulk string", async () => {
+    await sendCommand(redisConn, ["SET", "big ups", "west side massive"]);
+    await sendCommandTest(["GET", "big ups"], "west side massive");
+  });
+
+  await t.step("null", async () => {
+    await sendCommandTest(["GET", "nonexistant"], null);
+  });
+
+  await t.step("array", async () => {
+    await sendCommand(redisConn, [
+      "HSET",
+      "hash",
+      "hello",
+      "world",
+      "integer",
+      13,
+    ]);
+    await sendCommandTest([
+      "HMGET",
+      "hash",
+      "hello",
+      "integer",
+      "nonexistant",
+    ], ["world", "13", null]);
+    /** Empty array */
+    await sendCommandTest(["HGETALL", "nonexistant"], []);
+    /** Null array */
+    await sendCommandTest(["BLPOP", "list", 1], null);
+  });
 });
 
-Deno.test("listenReples works", async () => {
-  await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
-  const iterator = listenReplies(redisConn);
-  assertEquals(await iterator.next(), {
-    value: ["subscribe", "mychannel", 1],
-    done: false,
+Deno.test("methods", async (t) => {
+  await t.step("transactions", async () => {
+    await sendCommandTest(["MULTI"], "OK");
+    await sendCommandTest(["INCR", "FOO"], "QUEUED");
+    await sendCommandTest(["INCR", "BAR"], "QUEUED");
+    await sendCommandTest(["EXEC"], [1, 1]);
   });
-  await writeCommand(redisConn, ["UNSUBSCRIBE"]);
-  assertEquals(await iterator.next(), {
-    value: ["unsubscribe", "mychannel", 0],
-    done: false,
-  });
-});
 
-Deno.test("any fn throws if no reply", async () => {
-  await assertRejects(async () => await sendCommand(redisConn, ["SHUTDOWN"]));
+  await t.step("pipelining", async () => {
+    assertEquals(
+      await pipelineCommands(redisConn, [
+        ["INCR", "X"],
+        ["INCR", "X"],
+        ["INCR", "X"],
+        ["INCR", "X"],
+      ]),
+      [1, 2, 3, 4],
+    );
+  });
+
+  await t.step("listening", async () => {
+    await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
+    const iterator = listenReplies(redisConn);
+    assertEquals(await iterator.next(), {
+      value: ["subscribe", "mychannel", 1],
+      done: false,
+    });
+    await writeCommand(redisConn, ["UNSUBSCRIBE"]);
+    assertEquals(await iterator.next(), {
+      value: ["unsubscribe", "mychannel", 0],
+      done: false,
+    });
+  });
+
+  /** This test must be last */
+  await t.step("no reply", async () => {
+    await assertRejects(async () => await sendCommand(redisConn, ["SHUTDOWN"]));
+  });
 });
 
 addEventListener("unload", () => redisConn.close());

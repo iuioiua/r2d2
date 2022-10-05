@@ -1,6 +1,6 @@
 import { BufReader, concat, writeAll } from "../deps.ts";
 import { type Command, createRequest, writeCommand } from "./request.ts";
-import { readRepliesN, readReply, type Reply } from "./reply.ts";
+import { readNReplies, readReply, type Reply } from "./reply.ts";
 
 export { type Command, type Reply, writeCommand };
 
@@ -52,7 +52,7 @@ export async function pipelineCommands(
 ): Promise<Reply[]> {
   const request = concat(...commands.map(createRequest));
   await writeAll(redisConn, request);
-  return readRepliesN(commands.length, new BufReader(redisConn));
+  return readNReplies(commands.length, new BufReader(redisConn));
 }
 
 /**

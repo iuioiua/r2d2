@@ -6,7 +6,7 @@ import {
   ERROR_PREFIX,
   INTEGER_PREFIX,
   SIMPLE_STRING_PREFIX,
-} from "./common.ts";
+} from "./constants.ts";
 
 /** Parsed Redis reply */
 export type Reply = string | number | null | Reply[];
@@ -37,7 +37,7 @@ async function readBulkString(
     : await readReply(bufReader) as string;
 }
 
-export async function readRepliesN(
+export async function readNReplies(
   length: number,
   bufReader: BufReader,
 ): Promise<Reply[]> {
@@ -53,7 +53,7 @@ async function readArray(
   bufReader: BufReader,
 ): Promise<null | Reply[]> {
   const length = readInteger(line);
-  return length === -1 ? null : await readRepliesN(length, bufReader);
+  return length === -1 ? null : await readNReplies(length, bufReader);
 }
 
 /**

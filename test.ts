@@ -102,11 +102,18 @@ Deno.test("methods", async (t) => {
       done: false,
     });
   });
-
-  /** This test must be last */
-  await t.step("no reply", async () => {
-    await assertRejects(async () => await sendCommand(redisConn, ["SHUTDOWN"]));
-  });
 });
+
+Deno.test("RESP3", async () => {
+  await sendCommand(redisConn, ["HELLO", 3]);
+});
+
+/** This test must be last */
+Deno.test(
+  "cleanup",
+  async () => {
+    await assertRejects(async () => await sendCommand(redisConn, ["SHUTDOWN"]));
+  },
+);
 
 addEventListener("unload", () => redisConn.close());

@@ -1,10 +1,11 @@
-import { type BufReader } from "../deps.ts";
+import { type BufReader, chunk } from "../deps.ts";
 import {
   ARRAY_PREFIX,
   BULK_STRING_PREFIX,
   decoder,
   ERROR_PREFIX,
   INTEGER_PREFIX,
+  MAP_PREFIX,
   SIMPLE_STRING_PREFIX,
 } from "./constants.ts";
 
@@ -56,6 +57,12 @@ async function readArray(
   return length === -1 ? null : await readNReplies(length, bufReader);
 }
 
+async function readMap(line: string, bufReader: BufReader) {
+  const length = readInteger(line) / 2;
+  const reply = await readNReplies(length, bufReader);
+  return Object.fromEntries(chunk(reply, 2));
+}
+
 /**
  * Reads and processes the response line-by-line.
  *
@@ -78,6 +85,8 @@ export async function readReply(bufReader: BufReader): Promise<Reply> {
       return await readBulkString(line, bufReader);
     case ARRAY_PREFIX:
       return await readArray(line, bufReader);
+    case MAP_PREFIX:
+      return await readMap(line, bufReader);
     /** No prefix */
     default:
       return line;

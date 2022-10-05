@@ -113,6 +113,11 @@ Deno.test("RESP3", async (t) => {
     await sendCommandTest(["EVAL", "redis.setresp(3); return true", 0], true);
     await sendCommandTest(["EVAL", "redis.setresp(3); return false", 0], false);
   });
+
+  await t.step(
+    "null",
+    async () => await sendCommandTest(["GET", "null"], null),
+  );
 });
 
 /** This test must be last */

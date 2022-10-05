@@ -5,9 +5,10 @@ import {
   BULK_STRING_PREFIX,
   CRLF,
   encoder,
+  NULL_PREFIX,
 } from "./constants.ts";
 
-type Arg = string | number | boolean;
+type Arg = string | number | boolean | null;
 /** Redis command, which is an array of arguments. */
 export type Command = Arg[];
 
@@ -32,6 +33,10 @@ function serializeArg(arg: Arg): string {
       return serializeInteger(arg);
     case "boolean":
       return serializeBoolean(arg);
+    /** @todo: support Record<...> */
+    case "object":
+      /** @todo: add test for null request */
+      return NULL_PREFIX;
   }
 }
 

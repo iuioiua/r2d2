@@ -7,6 +7,7 @@ import {
   ERROR_PREFIX,
   INTEGER_PREFIX,
   MAP_PREFIX,
+  NULL_PREFIX,
   SIMPLE_STRING_PREFIX,
 } from "./constants.ts";
 
@@ -94,6 +95,8 @@ export async function readReply(bufReader: BufReader): Promise<Reply> {
       return await readMap(line, bufReader);
     case BOOLEAN_PREFIX:
       return readBoolean(line);
+    case NULL_PREFIX:
+      return null;
     /** No prefix */
     default:
       return line;

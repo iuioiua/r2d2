@@ -69,3 +69,9 @@ Deno.test("boolean", async () => {
   await readReplyTest("#t\r\n", true);
   await readReplyTest("#f\r\n", false);
 });
+
+Deno.test("double", async () => {
+  await readReplyTest(",1.23\r\n", 1.23);
+  await readReplyTest(",inf\r\n", Infinity);
+  await readReplyTest(",-inf\r\n", -Infinity);
+});

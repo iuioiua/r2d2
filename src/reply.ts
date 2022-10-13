@@ -4,6 +4,7 @@ import {
   BOOLEAN_PREFIX,
   BULK_STRING_PREFIX,
   decoder,
+  DOUBLE_PREFIX,
   ERROR_PREFIX,
   INTEGER_PREFIX,
   MAP_PREFIX,
@@ -69,6 +70,18 @@ function readBoolean(line: string): boolean {
   return removePrefix(line) === "t";
 }
 
+function readDouble(line: string): number {
+  const inter = removePrefix(line);
+  switch (inter) {
+    case "inf":
+      return Infinity;
+    case "-inf":
+      return -Infinity;
+    default:
+      return Number(inter);
+  }
+}
+
 /**
  * Reads and processes the response line-by-line.
  *
@@ -97,6 +110,8 @@ export async function readReply(bufReader: BufReader): Promise<Reply> {
       return readBoolean(line);
     case NULL_PREFIX:
       return null;
+    case DOUBLE_PREFIX:
+      return readDouble(line);
     /** No prefix */
     default:
       return line;

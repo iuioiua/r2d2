@@ -117,3 +117,10 @@ Deno.test("set", async () => {
     new Set(["orange", "apple", true, 100, 999]),
   );
 });
+
+Deno.test("streamed string", async () => {
+  await readReplyTest(
+    "$?\r\n;4\r\nHell\r\n;5\r\no wor\r\n;1\r\nd\r\n;0\r\n",
+    "Hello word",
+  );
+});

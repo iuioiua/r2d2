@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { type BufReader, chunk } from "../deps.ts";
 import {
   ARRAY_PREFIX,
@@ -23,7 +24,6 @@ export type Reply =
   | null
   | boolean
   | BigInt
-  // deno-lint-ignore no-explicit-any
   | Record<string, any>
   | Reply[];
 
@@ -39,15 +39,19 @@ async function readError(line: string): Promise<never> {
   return await Promise.reject(removePrefix(line).slice(4));
 }
 
-/** Reads a bulk string or verbatim string */
+/** Reads a bulk string, verbatim string or streamed string */
 async function readString(
   line: string,
   bufReader: BufReader,
 ): Promise<null | string> {
-  return readNumber(line) === -1
-    ? null
-    /** Skip to reading the next line, which is a string */
-    : await readReply(bufReader) as string;
+  switch (removePrefix(line)) {
+    case "-1":
+      return null;
+    case "?":
+      return await readStreamedString(bufReader);
+    default:
+      return await readReply(bufReader) as string;
+  }
 }
 
 export async function readNReplies(
@@ -69,7 +73,10 @@ async function readArray(
   return length === -1 ? null : await readNReplies(length, bufReader);
 }
 
-async function readMap(line: string, bufReader: BufReader) {
+async function readMap(
+  line: string,
+  bufReader: BufReader,
+): Promise<Record<string, any>> {
   const length = readNumber(line) * 2;
   const reply = await readNReplies(length, bufReader);
   return Object.fromEntries(chunk(reply, 2));
@@ -106,6 +113,20 @@ async function readSet(
   bufReader: BufReader,
 ): Promise<Set<Reply>> {
   return new Set(await readArray(line, bufReader));
+}
+
+async function readStreamedString(bufReader: BufReader): Promise<string> {
+  let result = "";
+  while (true) {
+    const line = await readReply(bufReader) as string;
+    if (line.charAt(0) !== ";") {
+      result += line;
+    }
+    if (line === ";0") {
+      break;
+    }
+  }
+  return result;
 }
 
 /**

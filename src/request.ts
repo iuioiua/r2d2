@@ -6,23 +6,21 @@ import {
   encoder,
 } from "./constants.ts";
 
-type Arg = string | number;
 /** Redis command, which is an array of arguments. */
-export type Command = Arg[];
-
-function serializeArg(arg: Arg): string {
-  return BULK_STRING_PREFIX + arg.toString().length + CRLF + arg + CRLF;
-}
+export type Command = (string | number)[];
 
 /**
  * Transforms a command, which is an array of arguments, into an RESP request.
  *
  * See {@link https://redis.io/docs/reference/protocol-spec/#send-commands-to-a-redis-server}
  */
-export function createRequest(command: Command): Uint8Array {
-  const request = ARRAY_PREFIX + command.length + CRLF +
-    command.map(serializeArg).join("");
-  return encoder.encode(request);
+export function createCommandString(command: Command): string {
+  let string = ARRAY_PREFIX + command.length + CRLF;
+  for (const arg of command) {
+    string += BULK_STRING_PREFIX + arg.toString().length + CRLF +
+      arg + CRLF;
+  }
+  return string;
 }
 
 /**
@@ -41,5 +39,5 @@ export async function writeCommand(
   redisConn: Deno.Conn,
   command: Command,
 ): Promise<void> {
-  await writeAll(redisConn, createRequest(command));
+  await writeAll(redisConn, encoder.encode(createCommandString(command)));
 }

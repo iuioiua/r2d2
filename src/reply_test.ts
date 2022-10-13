@@ -92,3 +92,10 @@ Deno.test("blob error", async () => {
 Deno.test("verbatim string", async () => {
   await readReplyTest("=15\r\ntxt:Some string\r\n", "txt:Some string");
 });
+
+Deno.test("map", async () => {
+  await readReplyTest("%2\r\n+first\r\n:1\r\n+second\r\n:2\r\n", {
+    first: 1,
+    second: 2,
+  });
+});

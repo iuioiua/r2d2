@@ -15,7 +15,14 @@ import {
 } from "./constants.ts";
 
 /** Parsed Redis reply */
-export type Reply = string | number | null | boolean | Reply[];
+export type Reply =
+  | string
+  | number
+  | null
+  | boolean
+  // deno-lint-ignore no-explicit-any
+  | Record<string, any>
+  | Reply[];
 
 function removePrefix(line: string): string {
   return line.slice(1);
@@ -60,7 +67,7 @@ async function readArray(
 }
 
 async function readMap(line: string, bufReader: BufReader) {
-  const length = readNumber(line) / 2;
+  const length = readNumber(line) * 2;
   const reply = await readNReplies(length, bufReader);
   return Object.fromEntries(chunk(reply, 2));
 }

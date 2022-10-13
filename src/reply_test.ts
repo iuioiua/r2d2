@@ -110,4 +110,3 @@ Deno.test("map", async () => {
     second: 2,
   });
 });
-

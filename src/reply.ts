@@ -29,15 +29,12 @@ async function readError(line: string): Promise<never> {
   return await Promise.reject(removePrefix(line).slice(4));
 }
 
-function readInteger(line: string): number {
-  return Number(removePrefix(line));
-}
-
-async function readBulkString(
+/** Reads a bulk string or verbatim string */
+async function readString(
   line: string,
   bufReader: BufReader,
 ): Promise<null | string> {
-  return readInteger(line) === -1
+  return readNumber(line) === -1
     ? null
     /** Skip to reading the next line, which is a string */
     : await readReply(bufReader) as string;
@@ -58,12 +55,12 @@ async function readArray(
   line: string,
   bufReader: BufReader,
 ): Promise<null | Reply[]> {
-  const length = readInteger(line);
+  const length = readNumber(line);
   return length === -1 ? null : await readNReplies(length, bufReader);
 }
 
 async function readMap(line: string, bufReader: BufReader) {
-  const length = readInteger(line) / 2;
+  const length = readNumber(line) / 2;
   const reply = await readNReplies(length, bufReader);
   return Object.fromEntries(chunk(reply, 2));
 }
@@ -72,7 +69,8 @@ function readBoolean(line: string): boolean {
   return removePrefix(line) === "t";
 }
 
-function readDouble(line: string): number {
+/** Reads an integer or double */
+function readNumber(line: string): number {
   const inter = removePrefix(line);
   switch (inter) {
     case "inf":
@@ -106,10 +104,11 @@ export async function readReply(bufReader: BufReader): Promise<Reply> {
     case ERROR_PREFIX:
       return readError(line);
     case INTEGER_PREFIX:
-      return readInteger(line);
-    case VERBATIM_STRING_PREFIX:
+    case DOUBLE_PREFIX:
+      return readNumber(line);
     case BULK_STRING_PREFIX:
-      return await readBulkString(line, bufReader);
+    case VERBATIM_STRING_PREFIX:
+      return await readString(line, bufReader);
     case ARRAY_PREFIX:
       return await readArray(line, bufReader);
     case MAP_PREFIX:
@@ -118,8 +117,6 @@ export async function readReply(bufReader: BufReader): Promise<Reply> {
       return readBoolean(line);
     case NULL_PREFIX:
       return null;
-    case DOUBLE_PREFIX:
-      return readDouble(line);
     case BLOB_ERROR_PREFIX:
       return readBlobError(bufReader);
     /** No prefix */

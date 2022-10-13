@@ -1,6 +1,7 @@
-import { BufReader, concat, writeAll } from "../deps.ts";
-import { type Command, createRequest, writeCommand } from "./request.ts";
+import { BufReader, writeAll } from "../deps.ts";
+import { type Command, createCommandString, writeCommand } from "./request.ts";
 import { readNReplies, readReply, type Reply } from "./reply.ts";
+import { encoder } from "./constants.ts";
 
 export { type Command, type Reply, writeCommand };
 
@@ -50,8 +51,8 @@ export async function pipelineCommands(
   redisConn: Deno.Conn,
   commands: Command[],
 ): Promise<Reply[]> {
-  const request = concat(...commands.map(createRequest));
-  await writeAll(redisConn, request);
+  const string = commands.map(createCommandString).join("");
+  await writeAll(redisConn, encoder.encode(string));
   return readNReplies(commands.length, new BufReader(redisConn));
 }
 

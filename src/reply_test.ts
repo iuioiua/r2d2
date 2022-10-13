@@ -110,3 +110,10 @@ Deno.test("map", async () => {
     second: 2,
   });
 });
+
+Deno.test("set", async () => {
+  await readReplyTest(
+    "~5\r\n+orange\r\n+apple\r\n#t\r\n:100\r\n:999\r\n",
+    new Set(["orange", "apple", true, 100, 999]),
+  );
+});

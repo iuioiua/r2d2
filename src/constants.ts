@@ -11,3 +11,4 @@ export const MAP_PREFIX = "%";
 export const BOOLEAN_PREFIX = "#";
 export const NULL_PREFIX = "_";
 export const DOUBLE_PREFIX = ",";
+export const BLOB_ERROR_PREFIX = "!";

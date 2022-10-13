@@ -75,3 +75,10 @@ Deno.test("double", async () => {
   await readReplyTest(",inf\r\n", Infinity);
   await readReplyTest(",-inf\r\n", -Infinity);
 });
+
+Deno.test("blob error", async () => {
+  await readReplyRejectTest(
+    "!21\r\nSYNTAX invalid syntax\r\n",
+    "SYNTAX invalid syntax",
+  );
+});

@@ -11,6 +11,7 @@ import {
   INTEGER_PREFIX,
   MAP_PREFIX,
   NULL_PREFIX,
+  SET_PREFIX,
   SIMPLE_STRING_PREFIX,
   VERBATIM_STRING_PREFIX,
 } from "./constants.ts";
@@ -100,6 +101,13 @@ function readBigNumber(line: string): BigInt {
   return BigInt(removePrefix(line));
 }
 
+async function readSet(
+  line: string,
+  bufReader: BufReader,
+): Promise<Set<Reply>> {
+  return new Set(await readArray(line, bufReader));
+}
+
 /**
  * Reads and processes the response line-by-line.
  *
@@ -134,6 +142,8 @@ export async function readReply(bufReader: BufReader): Promise<Reply> {
       return readBlobError(bufReader);
     case BIG_NUMBER_PREFIX:
       return readBigNumber(line);
+    case SET_PREFIX:
+      return readSet(line, bufReader);
     /** No prefix */
     default:
       return line;

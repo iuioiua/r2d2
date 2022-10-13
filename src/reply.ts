@@ -23,7 +23,7 @@ function readSimpleString(line: string): string {
 }
 
 async function readError(line: string): Promise<never> {
-  return await Promise.reject(removePrefix(line));
+  return await Promise.reject(removePrefix(line).slice(4));
 }
 
 function readInteger(line: string): number {

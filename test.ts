@@ -22,55 +22,6 @@ async function sendCommandTest(
   assertEquals(await sendCommand(redisConn, command), expected);
 }
 
-Deno.test("RESP v2", async (t) => {
-  await t.step(
-    "simple string",
-    async () => await sendCommandTest(["PING"], "PONG"),
-  );
-
-  await t.step("error", async () => {
-    await assertRejects(async () =>
-      await sendCommand(redisConn, ["helloworld"])
-    );
-  });
-
-  await t.step("integer", async () => {
-    await sendCommandTest(["INCR", "integer"], 1);
-    await sendCommandTest(["INCR", "integer"], 2);
-  });
-
-  await t.step("bulk string", async () => {
-    await sendCommand(redisConn, ["SET", "big ups", "west side massive"]);
-    await sendCommandTest(["GET", "big ups"], "west side massive");
-  });
-
-  await t.step("null", async () => {
-    await sendCommandTest(["GET", "nonexistant"], null);
-  });
-
-  await t.step("array", async () => {
-    await sendCommand(redisConn, [
-      "HSET",
-      "hash",
-      "hello",
-      "world",
-      "integer",
-      13,
-    ]);
-    await sendCommandTest([
-      "HMGET",
-      "hash",
-      "hello",
-      "integer",
-      "nonexistant",
-    ], ["world", "13", null]);
-    /** Empty array */
-    await sendCommandTest(["HGETALL", "nonexistant"], []);
-    /** Null array */
-    await sendCommandTest(["BLPOP", "list", 1], null);
-  });
-});
-
 Deno.test("methods", async (t) => {
   await t.step("transactions", async () => {
     await sendCommandTest(["MULTI"], "OK");
@@ -104,20 +55,6 @@ Deno.test("methods", async (t) => {
       done: false,
     });
   });
-});
-
-Deno.test("RESP3", async (t) => {
-  await sendCommand(redisConn, ["HELLO", 3]);
-
-  await t.step("boolean", async () => {
-    await sendCommandTest(["EVAL", "redis.setresp(3); return true", 0], true);
-    await sendCommandTest(["EVAL", "redis.setresp(3); return false", 0], false);
-  });
-
-  await t.step(
-    "null",
-    async () => await sendCommandTest(["GET", "null"], null),
-  );
 });
 
 /** This test must be last */

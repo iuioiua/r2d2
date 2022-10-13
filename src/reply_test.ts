@@ -50,6 +50,12 @@ Deno.test("array", async () => {
     null,
     "world",
   ]);
+  /** Nested array */
+  await readReplyTest("*2\r\n*3\r\n:1\r\n$5\r\nhello\r\n:2\r\n#f\r\n", [[
+    1,
+    "hello",
+    2,
+  ], false]);
 });
 
 Deno.test("simple error", async () => {

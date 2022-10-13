@@ -1,6 +1,7 @@
 import { type BufReader, chunk } from "../deps.ts";
 import {
   ARRAY_PREFIX,
+  BLOB_ERROR_PREFIX,
   BOOLEAN_PREFIX,
   BULK_STRING_PREFIX,
   decoder,
@@ -82,6 +83,11 @@ function readDouble(line: string): number {
   }
 }
 
+async function readBlobError(bufReader: BufReader): Promise<never> {
+  /** Skip to reading the next line, which is a string */
+  return await Promise.reject(await readReply(bufReader) as string);
+}
+
 /**
  * Reads and processes the response line-by-line.
  *
@@ -112,6 +118,8 @@ export async function readReply(bufReader: BufReader): Promise<Reply> {
       return null;
     case DOUBLE_PREFIX:
       return readDouble(line);
+    case BLOB_ERROR_PREFIX:
+      return readBlobError(bufReader);
     /** No prefix */
     default:
       return line;

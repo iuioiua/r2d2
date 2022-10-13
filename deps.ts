@@ -8,5 +8,6 @@ export {
   assertEquals,
   assertRejects,
 } from "https://deno.land/std@0.158.0/testing/asserts.ts";
+export { StringReader } from "https://deno.land/std@0.158.0/io/readers.ts";
 
 export { connect } from "https://deno.land/x/redis@v0.27.0/redis.ts";

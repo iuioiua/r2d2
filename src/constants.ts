@@ -13,3 +13,4 @@ export const NULL_PREFIX = "_";
 export const DOUBLE_PREFIX = ",";
 export const BLOB_ERROR_PREFIX = "!";
 export const VERBATIM_STRING_PREFIX = "=";
+export const BIG_NUMBER_PREFIX = "(";

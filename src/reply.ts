@@ -1,6 +1,7 @@
 import { type BufReader, chunk } from "../deps.ts";
 import {
   ARRAY_PREFIX,
+  BIG_NUMBER_PREFIX,
   BLOB_ERROR_PREFIX,
   BOOLEAN_PREFIX,
   BULK_STRING_PREFIX,
@@ -20,6 +21,7 @@ export type Reply =
   | number
   | null
   | boolean
+  | BigInt
   // deno-lint-ignore no-explicit-any
   | Record<string, any>
   | Reply[];
@@ -94,6 +96,10 @@ async function readBlobError(bufReader: BufReader): Promise<never> {
   return await Promise.reject(await readReply(bufReader) as string);
 }
 
+function readBigNumber(line: string): BigInt {
+  return BigInt(removePrefix(line));
+}
+
 /**
  * Reads and processes the response line-by-line.
  *
@@ -126,6 +132,8 @@ export async function readReply(bufReader: BufReader): Promise<Reply> {
       return null;
     case BLOB_ERROR_PREFIX:
       return readBlobError(bufReader);
+    case BIG_NUMBER_PREFIX:
+      return readBigNumber(line);
     /** No prefix */
     default:
       return line;

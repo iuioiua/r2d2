@@ -1,6 +1,7 @@
 import { type BufReader, chunk } from "../deps.ts";
 import {
   ARRAY_PREFIX,
+  BIG_NUMBER_PREFIX,
   BLOB_ERROR_PREFIX,
   BOOLEAN_PREFIX,
   BULK_STRING_PREFIX,
@@ -15,7 +16,7 @@ import {
 } from "./constants.ts";
 
 /** Parsed Redis reply */
-export type Reply = string | number | null | boolean | Reply[];
+export type Reply = string | number | null | boolean | BigInt | Reply[];
 
 function removePrefix(line: string): string {
   return line.slice(1);
@@ -87,6 +88,10 @@ async function readBlobError(bufReader: BufReader): Promise<never> {
   return await Promise.reject(await readReply(bufReader) as string);
 }
 
+function readBigNumber(line: string): BigInt {
+  return BigInt(removePrefix(line));
+}
+
 /**
  * Reads and processes the response line-by-line.
  *
@@ -119,6 +124,8 @@ export async function readReply(bufReader: BufReader): Promise<Reply> {
       return null;
     case BLOB_ERROR_PREFIX:
       return readBlobError(bufReader);
+    case BIG_NUMBER_PREFIX:
+      return readBigNumber(line);
     /** No prefix */
     default:
       return line;

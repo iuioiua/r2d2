@@ -92,3 +92,14 @@ Deno.test("blob error", async () => {
 Deno.test("verbatim string", async () => {
   await readReplyTest("=15\r\ntxt:Some string\r\n", "txt:Some string");
 });
+
+Deno.test("big number", async () => {
+  await readReplyTest(
+    "(3492890328409238509324850943850943825024385\r\n",
+    3492890328409238509324850943850943825024385n,
+  );
+  await readReplyTest(
+    "(-3492890328409238509324850943850943825024385\r\n",
+    -3492890328409238509324850943850943825024385n,
+  );
+});

@@ -82,3 +82,7 @@ Deno.test("blob error", async () => {
     "SYNTAX invalid syntax",
   );
 });
+
+Deno.test("verbatim string", async () => {
+  await readReplyTest("=15\r\ntxt:Some string\r\n", "txt:Some string");
+});

@@ -11,6 +11,7 @@ import {
   MAP_PREFIX,
   NULL_PREFIX,
   SIMPLE_STRING_PREFIX,
+  VERBATIM_STRING_PREFIX,
 } from "./constants.ts";
 
 /** Parsed Redis reply */
@@ -106,6 +107,7 @@ export async function readReply(bufReader: BufReader): Promise<Reply> {
       return readError(line);
     case INTEGER_PREFIX:
       return readInteger(line);
+    case VERBATIM_STRING_PREFIX:
     case BULK_STRING_PREFIX:
       return await readBulkString(line, bufReader);
     case ARRAY_PREFIX:

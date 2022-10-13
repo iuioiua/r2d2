@@ -103,3 +103,10 @@ Deno.test("big number", async () => {
     -3492890328409238509324850943850943825024385n,
   );
 });
+
+Deno.test("map", async () => {
+  await readReplyTest("%2\r\n+first\r\n:1\r\n+second\r\n:2\r\n", {
+    first: 1,
+    second: 2,
+  });
+});

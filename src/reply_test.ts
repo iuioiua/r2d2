@@ -131,5 +131,12 @@ Deno.test("streamed array", async () => {
 });
 
 Deno.test("streamed set", async () => {
-  await readReplyTest("~?\r\n+a\r\n:1\r\n+b\r\n:2\r\n.\r\n", new Set(["a", 1, "b", 2]));
+  await readReplyTest(
+    "~?\r\n+a\r\n:1\r\n+b\r\n:2\r\n.\r\n",
+    new Set(["a", 1, "b", 2]),
+  );
+});
+
+Deno.test("streamed map", async () => {
+  await readReplyTest("%?\r\n+a\r\n:1\r\n+b\r\n:2\r\n.\r\n", { a: 1, b: 2 });
 });

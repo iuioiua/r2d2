@@ -83,9 +83,17 @@ async function readArray(
 async function readMap(
   line: string,
   bufReader: BufReader,
-): Promise<Record<string, any>> {
+): Promise<Reply> {
+  if (line === "%?") {
+    return await readStreamedMap(bufReader);
+  }
   const length = readNumber(line) * 2;
   const reply = await readNReplies(length, bufReader);
+  return Object.fromEntries(chunk(reply, 2));
+}
+
+async function readStreamedMap(bufReader: BufReader): Promise<Reply> {
+  const reply = await readStreamedArray(bufReader);
   return Object.fromEntries(chunk(reply, 2));
 }
 

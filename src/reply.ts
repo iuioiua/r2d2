@@ -69,8 +69,15 @@ async function readArray(
   line: string,
   bufReader: BufReader,
 ): Promise<null | Reply[]> {
-  const length = readNumber(line);
-  return length === -1 ? null : await readNReplies(length, bufReader);
+  const inter = removePrefix(line);
+  switch (inter) {
+    case "?":
+      return await readStreamedArray(bufReader);
+    case "-1":
+      return null;
+    default:
+      return await readNReplies(Number(inter), bufReader);
+  }
 }
 
 async function readMap(
@@ -125,6 +132,18 @@ async function readStreamedString(bufReader: BufReader): Promise<string> {
     if (line === ";0") {
       break;
     }
+  }
+  return result;
+}
+
+async function readStreamedArray(bufReader: BufReader): Promise<Reply[]> {
+  const result: Reply[] = [];
+  while (true) {
+    const reply = await readReply(bufReader);
+    if (reply === ".") {
+      break;
+    }
+    result.push(reply);
   }
   return result;
 }

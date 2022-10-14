@@ -124,3 +124,8 @@ Deno.test("streamed string", async () => {
     "Hello word",
   );
 });
+
+/** @todo test more complex case */
+Deno.test("streamed array", async () => {
+  await readReplyTest("*?\r\n:1\r\n:2\r\n:3\r\n.\r\n", [1, 2, 3]);
+});

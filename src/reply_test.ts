@@ -129,3 +129,7 @@ Deno.test("streamed string", async () => {
 Deno.test("streamed array", async () => {
   await readReplyTest("*?\r\n:1\r\n:2\r\n:3\r\n.\r\n", [1, 2, 3]);
 });
+
+Deno.test("streamed set", async () => {
+  await readReplyTest("~?\r\n+a\r\n:1\r\n+b\r\n:2\r\n.\r\n", new Set(["a", 1, "b", 2]));
+});

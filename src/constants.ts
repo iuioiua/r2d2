@@ -16,6 +16,6 @@ export const VERBATIM_STRING_PREFIX = "=";
 export const BIG_NUMBER_PREFIX = "(";
 export const SET_PREFIX = "~";
 
-export const STREAMED_REPLY_FIRST_LINE = "?";
-export const STREAMED_STRING_DELIMITER = ";0";
-export const STREAMED_AGGREGATE_DELIMITER = ".";
+export const STREAMED_REPLY_START_DELIMITER = "?";
+export const STREAMED_STRING_END_DELIMITER = ";0";
+export const STREAMED_AGGREGATE_END_DELIMITER = ".";

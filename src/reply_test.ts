@@ -61,7 +61,7 @@ Deno.test("array", async () => {
 Deno.test("simple error", async () => {
   await readReplyRejectTest(
     "-ERR this is the error description\r\n",
-    "this is the error description",
+    "ERR this is the error description",
   );
 });
 

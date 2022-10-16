@@ -56,10 +56,6 @@ Deno.test("boolean", async () => {
   await readReplyTest("#f\r\n", false);
 });
 
-Deno.test("simple string", async () => {
-  await readReplyTest("+OK\r\n", "OK");
-});
-
 Deno.test("integer", async () => {
   await readReplyTest(":42\r\n", 42);
 });
@@ -108,6 +104,10 @@ Deno.test("set", async () => {
     "~5\r\n+orange\r\n+apple\r\n#t\r\n:100\r\n:999\r\n",
     new Set(["orange", "apple", true, 100, 999]),
   );
+});
+
+Deno.test("simple string", async () => {
+  await readReplyTest("+OK\r\n", "OK");
 });
 
 Deno.test("streamed string", async () => {

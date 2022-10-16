@@ -36,8 +36,8 @@ export function createCommandString(command: Command): string {
  * ```
  */
 export async function writeCommand(
-  redisConn: Deno.Conn,
+  writer: Deno.Writer,
   command: Command,
 ): Promise<void> {
-  await writeAll(redisConn, encoder.encode(createCommandString(command)));
+  await writeAll(writer, encoder.encode(createCommandString(command)));
 }

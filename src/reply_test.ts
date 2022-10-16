@@ -16,24 +16,6 @@ async function readReplyRejectTest(output: string, expected: string) {
   );
 }
 
-/** RESP v2 */
-
-Deno.test("simple string", async () => {
-  await readReplyTest("+OK\r\n", "OK");
-});
-
-Deno.test("integer", async () => {
-  await readReplyTest(":42\r\n", 42);
-});
-
-Deno.test("bulk string", async () => {
-  await readReplyTest("$5\r\nhello\r\n", "hello");
-  /** Empty bulk string */
-  await readReplyTest("$0\r\n\r\n", "");
-  /** Null bulk string */
-  await readReplyTest("$-1\r\n", null);
-});
-
 Deno.test("array", async () => {
   await readReplyTest("*2\r\n$5\r\nhello\r\n$5\r\nworld\r\n", [
     "hello",
@@ -58,41 +40,6 @@ Deno.test("array", async () => {
   ], false]);
 });
 
-Deno.test("simple error", async () => {
-  await readReplyRejectTest(
-    "-ERR this is the error description\r\n",
-    "ERR this is the error description",
-  );
-});
-
-/** RESP3 */
-
-Deno.test("null", async () => {
-  await readReplyTest("_\r\n", null);
-});
-
-Deno.test("boolean", async () => {
-  await readReplyTest("#t\r\n", true);
-  await readReplyTest("#f\r\n", false);
-});
-
-Deno.test("double", async () => {
-  await readReplyTest(",1.23\r\n", 1.23);
-  await readReplyTest(",inf\r\n", Infinity);
-  await readReplyTest(",-inf\r\n", -Infinity);
-});
-
-Deno.test("blob error", async () => {
-  await readReplyRejectTest(
-    "!21\r\nSYNTAX invalid syntax\r\n",
-    "SYNTAX invalid syntax",
-  );
-});
-
-Deno.test("verbatim string", async () => {
-  await readReplyTest("=15\r\ntxt:Some string\r\n", "txt:Some string");
-});
-
 Deno.test("big number", async () => {
   await readReplyTest(
     "(3492890328409238509324850943850943825024385\r\n",
@@ -104,6 +51,43 @@ Deno.test("big number", async () => {
   );
 });
 
+Deno.test("boolean", async () => {
+  await readReplyTest("#t\r\n", true);
+  await readReplyTest("#f\r\n", false);
+});
+
+Deno.test("integer", async () => {
+  await readReplyTest(":42\r\n", 42);
+});
+
+Deno.test("bulk string", async () => {
+  await readReplyTest("$5\r\nhello\r\n", "hello");
+  /** Empty bulk string */
+  await readReplyTest("$0\r\n\r\n", "");
+  /** Null bulk string */
+  await readReplyTest("$-1\r\n", null);
+});
+
+Deno.test("blob error", async () => {
+  await readReplyRejectTest(
+    "!21\r\nSYNTAX invalid syntax\r\n",
+    "SYNTAX invalid syntax",
+  );
+});
+
+Deno.test("error", async () => {
+  await readReplyRejectTest(
+    "-ERR this is the error description\r\n",
+    "ERR this is the error description",
+  );
+});
+
+Deno.test("double", async () => {
+  await readReplyTest(",1.23\r\n", 1.23);
+  await readReplyTest(",inf\r\n", Infinity);
+  await readReplyTest(",-inf\r\n", -Infinity);
+});
+
 Deno.test("map", async () => {
   await readReplyTest("%2\r\n+first\r\n:1\r\n+second\r\n:2\r\n", {
     first: 1,
@@ -111,11 +95,19 @@ Deno.test("map", async () => {
   });
 });
 
+Deno.test("null", async () => {
+  await readReplyTest("_\r\n", null);
+});
+
 Deno.test("set", async () => {
   await readReplyTest(
     "~5\r\n+orange\r\n+apple\r\n#t\r\n:100\r\n:999\r\n",
     new Set(["orange", "apple", true, 100, 999]),
   );
+});
+
+Deno.test("simple string", async () => {
+  await readReplyTest("+OK\r\n", "OK");
 });
 
 Deno.test("streamed string", async () => {
@@ -139,4 +131,8 @@ Deno.test("streamed set", async () => {
 
 Deno.test("streamed map", async () => {
   await readReplyTest("%?\r\n+a\r\n:1\r\n+b\r\n:2\r\n.\r\n", { a: 1, b: 2 });
+});
+
+Deno.test("verbatim string", async () => {
+  await readReplyTest("=15\r\ntxt:Some string\r\n", "txt:Some string");
 });

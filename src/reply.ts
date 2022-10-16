@@ -6,7 +6,6 @@ import {
   BLOB_ERROR_PREFIX,
   BOOLEAN_PREFIX,
   BULK_STRING_PREFIX,
-  decoder,
   DOUBLE_PREFIX,
   ERROR_PREFIX,
   INTEGER_PREFIX,
@@ -31,6 +30,8 @@ export type Reply =
   | Reply[];
 
 /** Utilities */
+
+const decoder = new TextDecoder();
 
 function removePrefix(line: string): string {
   return line.slice(1);

@@ -14,9 +14,9 @@ import {
   NULL_PREFIX,
   SET_PREFIX,
   SIMPLE_STRING_PREFIX,
-  STREAMED_AGGREGATE_DELIMITER,
-  STREAMED_REPLY_FIRST_LINE,
-  STREAMED_STRING_DELIMITER,
+  STREAMED_AGGREGATE_END_DELIMITER,
+  STREAMED_REPLY_START_DELIMITER,
+  STREAMED_STRING_END_DELIMITER,
   VERBATIM_STRING_PREFIX,
 } from "./constants.ts";
 
@@ -30,12 +30,14 @@ export type Reply =
   | Record<string, any>
   | Reply[];
 
+/** Utilities */
+
 function removePrefix(line: string): string {
   return line.slice(1);
 }
 
 function isSteamedReply(line: string): boolean {
-  return line.charAt(1) === STREAMED_REPLY_FIRST_LINE;
+  return line.charAt(1) === STREAMED_REPLY_START_DELIMITER;
 }
 
 function toObject(array: any[]): Record<string, any> {
@@ -53,7 +55,7 @@ export async function readNReplies(
   return replies;
 }
 
-async function readDelimitedReplies(
+async function readStreamedReply(
   delimiter: string,
   bufReader: BufReader,
 ): Promise<Reply[]> {
@@ -68,29 +70,6 @@ async function readDelimitedReplies(
   return replies;
 }
 
-function readSimpleString(line: string): string {
-  return removePrefix(line);
-}
-
-async function readError(line: string): Promise<never> {
-  return await Promise.reject(removePrefix(line).slice(4));
-}
-
-/** Reads a bulk string or verbatim string */
-async function readString(
-  line: string,
-  bufReader: BufReader,
-): Promise<null | string> {
-  return readNumber(line) === -1 ? null : await readReply(bufReader) as string;
-}
-
-async function readStreamedString(bufReader: BufReader): Promise<string> {
-  return (await readDelimitedReplies(STREAMED_STRING_DELIMITER, bufReader))
-    /** Remove byte counts */
-    .filter((line) => !(line as string).startsWith(";"))
-    .join("");
-}
-
 async function readArray(
   line: string,
   bufReader: BufReader,
@@ -99,8 +78,31 @@ async function readArray(
   return length === -1 ? null : await readNReplies(length, bufReader);
 }
 
-async function readStreamedArray(bufReader: BufReader) {
-  return await readDelimitedReplies(STREAMED_AGGREGATE_DELIMITER, bufReader);
+function readBigNumber(line: string): BigInt {
+  return BigInt(removePrefix(line));
+}
+
+async function readBlobError(bufReader: BufReader): Promise<never> {
+  /** Skip to reading the next line, which is a string */
+  return await Promise.reject(await readReply(bufReader) as string);
+}
+
+function readBoolean(line: string): boolean {
+  return removePrefix(line) === "t";
+}
+
+/** Also reads verbatim string */
+async function readBulkString(
+  line: string,
+  bufReader: BufReader,
+): Promise<null | string> {
+  return removePrefix(line) === "-1"
+    ? null
+    : await readReply(bufReader) as string;
+}
+
+async function readError(line: string): Promise<never> {
+  return await Promise.reject(removePrefix(line));
 }
 
 async function readMap(
@@ -110,18 +112,6 @@ async function readMap(
   const length = readNumber(line) * 2;
   const array = await readNReplies(length, bufReader);
   return toObject(array);
-}
-
-async function readStreamedMap(bufReader: BufReader) {
-  const array = await readDelimitedReplies(
-    STREAMED_AGGREGATE_DELIMITER,
-    bufReader,
-  );
-  return toObject(array);
-}
-
-function readBoolean(line: string): boolean {
-  return removePrefix(line) === "t";
 }
 
 /** Reads an integer or double */
@@ -137,24 +127,38 @@ function readNumber(line: string): number {
   }
 }
 
-async function readBlobError(bufReader: BufReader): Promise<never> {
-  /** Skip to reading the next line, which is a string */
-  return await Promise.reject(await readReply(bufReader) as string);
+async function readSet(
+  line: string,
+  bufReader: BufReader,
+): Promise<Set<Reply>> {
+  return new Set(await readArray(line, bufReader));
 }
 
-function readBigNumber(line: string): BigInt {
-  return BigInt(removePrefix(line));
+function readSimpleString(line: string): string {
+  return removePrefix(line);
+}
+
+async function readStreamedArray(bufReader: BufReader) {
+  return await readStreamedReply(STREAMED_AGGREGATE_END_DELIMITER, bufReader);
+}
+
+async function readStreamedMap(bufReader: BufReader) {
+  const array = await readStreamedReply(
+    STREAMED_AGGREGATE_END_DELIMITER,
+    bufReader,
+  );
+  return toObject(array);
 }
 
 async function readStreamedSet(bufReader: BufReader): Promise<Set<Reply>> {
   return new Set(await readStreamedArray(bufReader));
 }
 
-async function readSet(
-  line: string,
-  bufReader: BufReader,
-): Promise<Set<Reply>> {
-  return new Set(await readArray(line, bufReader));
+async function readStreamedString(bufReader: BufReader): Promise<string> {
+  return (await readStreamedReply(STREAMED_STRING_END_DELIMITER, bufReader))
+    /** Remove byte counts */
+    .filter((line) => !(line as string).startsWith(";"))
+    .join("");
 }
 
 /**
@@ -169,38 +173,38 @@ export async function readReply(bufReader: BufReader): Promise<Reply> {
   }
   const line = decoder.decode(result.line);
   switch (line.charAt(0)) {
-    case SIMPLE_STRING_PREFIX:
-      return readSimpleString(line);
-    case ERROR_PREFIX:
-      return readError(line);
-    case INTEGER_PREFIX:
-    case DOUBLE_PREFIX:
-      return readNumber(line);
-    case BULK_STRING_PREFIX:
-    case VERBATIM_STRING_PREFIX:
-      return isSteamedReply(line)
-        ? await readStreamedString(bufReader)
-        : await readString(line, bufReader);
     case ARRAY_PREFIX:
       return isSteamedReply(line)
         ? await readStreamedArray(bufReader)
         : await readArray(line, bufReader);
+    case BIG_NUMBER_PREFIX:
+      return readBigNumber(line);
+    case BLOB_ERROR_PREFIX:
+      return readBlobError(bufReader);
+    case BOOLEAN_PREFIX:
+      return readBoolean(line);
+    case BULK_STRING_PREFIX:
+    case VERBATIM_STRING_PREFIX:
+      return isSteamedReply(line)
+        ? await readStreamedString(bufReader)
+        : await readBulkString(line, bufReader);
+    case DOUBLE_PREFIX:
+    case INTEGER_PREFIX:
+      return readNumber(line);
+    case ERROR_PREFIX:
+      return readError(line);
     case MAP_PREFIX:
       return isSteamedReply(line)
         ? await readStreamedMap(bufReader)
         : await readMap(line, bufReader);
-    case BOOLEAN_PREFIX:
-      return readBoolean(line);
     case NULL_PREFIX:
       return null;
-    case BLOB_ERROR_PREFIX:
-      return readBlobError(bufReader);
-    case BIG_NUMBER_PREFIX:
-      return readBigNumber(line);
     case SET_PREFIX:
       return isSteamedReply(line)
         ? await readStreamedSet(bufReader)
         : await readSet(line, bufReader);
+    case SIMPLE_STRING_PREFIX:
+      return readSimpleString(line);
     /** No prefix */
     default:
       return line;

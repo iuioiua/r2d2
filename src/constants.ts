@@ -2,6 +2,7 @@ export const CRLF = "\r\n";
 export const encoder = new TextEncoder();
 
 export const ARRAY_PREFIX = "*";
+export const ATTRIBUTE_PREFIX = "|";
 export const BIG_NUMBER_PREFIX = "(";
 export const BLOB_ERROR_PREFIX = "!";
 export const BOOLEAN_PREFIX = "#";

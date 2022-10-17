@@ -40,6 +40,18 @@ Deno.test("array", async () => {
   ], false]);
 });
 
+Deno.test("attribute", async () => {
+  await readReplyTest(
+    "|1\r\n+key-popularity\r\n%2\r\n$1\r\na\r\n,0.1923\r\n$1\r\nb\r\n,0.0012\r\n*2\r\n:2039123\r\n:9543892\r\n",
+    [2039123, 9543892],
+  );
+  await readReplyTest("*3\r\n:1\r\n:2\r\n|1\r\n+ttl\r\n:3600\r\n:3\r\n", [
+    1,
+    2,
+    3,
+  ]);
+});
+
 Deno.test("big number", async () => {
   await readReplyTest(
     "(3492890328409238509324850943850943825024385\r\n",

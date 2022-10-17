@@ -2,6 +2,7 @@
 import { type BufReader, chunk } from "../deps.ts";
 import {
   ARRAY_PREFIX,
+  ATTRIBUTE_PREFIX,
   BIG_NUMBER_PREFIX,
   BLOB_ERROR_PREFIX,
   BOOLEAN_PREFIX,
@@ -77,6 +78,19 @@ async function readArray(
 ): Promise<null | Reply[]> {
   const length = readNumber(line);
   return length === -1 ? null : await readNReplies(length, bufReader);
+}
+
+/**
+ * Read but don't return actualy attribute data.
+ *
+ * @todo include attribute data somehow
+ */
+async function readAttribute(
+  line: string,
+  bufReader: BufReader,
+): Promise<null | Reply> {
+  await readMap(line, bufReader);
+  return await readReply(bufReader);
 }
 
 function readBigNumber(line: string): BigInt {
@@ -178,6 +192,8 @@ export async function readReply(bufReader: BufReader): Promise<Reply> {
       return isSteamedReply(line)
         ? await readStreamedArray(bufReader)
         : await readArray(line, bufReader);
+    case ATTRIBUTE_PREFIX:
+      return await readAttribute(line, bufReader);
     case BIG_NUMBER_PREFIX:
       return readBigNumber(line);
     case BLOB_ERROR_PREFIX:

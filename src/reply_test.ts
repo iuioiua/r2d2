@@ -111,6 +111,13 @@ Deno.test("null", async () => {
   await readReplyTest("_\r\n", null);
 });
 
+Deno.test("push", async () => {
+  await readReplyTest(
+    ">4\r\n+pubsub\r\n+message\r\n+somechannel\r\n+this is the message\r\n",
+    ["pubsub", "message", "somechannel", "this is the message"],
+  );
+});
+
 Deno.test("set", async () => {
   await readReplyTest(
     "~5\r\n+orange\r\n+apple\r\n#t\r\n:100\r\n:999\r\n",

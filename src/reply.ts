@@ -12,6 +12,7 @@ import {
   INTEGER_PREFIX,
   MAP_PREFIX,
   NULL_PREFIX,
+  PUSH_PREFIX,
   SET_PREFIX,
   SIMPLE_STRING_PREFIX,
   STREAMED_AGGREGATE_END_DELIMITER,
@@ -189,6 +190,7 @@ export async function readReply(bufReader: BufReader): Promise<Reply> {
   const line = decoder.decode(result.line);
   switch (line.charAt(0)) {
     case ARRAY_PREFIX:
+    case PUSH_PREFIX:
       return isSteamedReply(line)
         ? await readStreamedArray(bufReader)
         : await readArray(line, bufReader);

@@ -12,6 +12,7 @@ export const ERROR_PREFIX = "-";
 export const INTEGER_PREFIX = ":";
 export const MAP_PREFIX = "%";
 export const NULL_PREFIX = "_";
+export const PUSH_PREFIX = ">";
 export const SET_PREFIX = "~";
 export const SIMPLE_STRING_PREFIX = "+";
 export const VERBATIM_STRING_PREFIX = "=";

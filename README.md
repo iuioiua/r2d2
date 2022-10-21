@@ -4,74 +4,11 @@
 [![CI](https://github.com/iuioiua/r2d2/actions/workflows/ci.yml/badge.svg)](https://github.com/iuioiua/r2d2/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/iuioiua/r2d2/branch/main/graph/badge.svg?token=8IDAVSL014)](https://codecov.io/gh/iuioiua/r2d2)
 
-Fast, lightweight Redis client library for [Deno](https://deno.land/). Design
-principles:
-
-- Must be fundamentally simple
-- Use native Deno APIs and [Deno's standard library](https://deno.land/std)
-  without custom interfaces
-- Encourage the use of actual Redis commands without intermediate abstractions
+Fast, lightweight Redis client library for [Deno](https://deno.land/). Designed
+to be fundamentally simple and encourage the use of actual Redis commands
+without unnecessary intermediate abstractions.
 
 ## Usage
-
-Must be run with `--allow-net` permission.
-
-### Basic commands
-
-```ts
-import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
-
-const redisConn = await Deno.connect({ port: 6379 });
-
-// Returns "OK"
-await sendCommand(redisConn, ["SET", "hello", "world"]);
-
-// Returns "world"
-await sendCommand(redisConn, ["GET", "hello"]);
-```
-
-If you don't care about the reply:
-
-```ts
-import { writeCommand } from "https://deno.land/x/r2d2/mod.ts";
-
-const redisConn = await Deno.connect({ port: 6379 });
-
-// Returns nothing
-await writeCommand(redisConn, ["SHUTDOWN"]);
-```
-
-### Pipelining
-
-```ts
-import { pipelineCommands } from "https://deno.land/x/r2d2/mod.ts";
-
-const redisConn = await Deno.connect({ port: 6379 });
-
-// Returns [1, 2, 3, 4]
-await pipelineCommands(redisConn, [
-  ["INCR", "X"],
-  ["INCR", "X"],
-  ["INCR", "X"],
-  ["INCR", "X"],
-]);
-```
-
-### Pub/Sub
-
-```ts
-import { listenReplies, writeCommand } from "https://deno.land/x/r2d2/mod.ts";
-
-const redisConn = await Deno.connect({ port: 6379 });
-
-await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
-for await (const reply of listenReplies(redisConn)) {
-  // Prints ["subscribe", "mychannel", 1] first iteration
-  console.log(reply);
-}
-```
-
-## Documentation
 
 Check out the documentation
 [here](https://doc.deno.land/https://deno.land/x/r2d2/mod.ts).

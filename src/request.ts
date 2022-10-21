@@ -26,7 +26,7 @@ export function createCommandString(command: Command): string {
 /**
  * Just writes a command to the Redis server.
  *
- * Example:
+ * @example
  * ```ts
  * import { writeCommand } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *

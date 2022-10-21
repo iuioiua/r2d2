@@ -154,11 +154,11 @@ function readSimpleString(line: string): string {
   return removePrefix(line);
 }
 
-async function readStreamedArray(bufReader: BufReader) {
+async function readStreamedArray(bufReader: BufReader): Promise<Reply[]> {
   return await readStreamedReply(STREAMED_AGGREGATE_END_DELIMITER, bufReader);
 }
 
-async function readStreamedMap(bufReader: BufReader) {
+async function readStreamedMap(bufReader: BufReader): Promise<Record<string, any>> {
   const array = await readStreamedReply(
     STREAMED_AGGREGATE_END_DELIMITER,
     bufReader,

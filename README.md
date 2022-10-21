@@ -4,12 +4,12 @@
 [![CI](https://github.com/iuioiua/r2d2/actions/workflows/ci.yml/badge.svg)](https://github.com/iuioiua/r2d2/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/iuioiua/r2d2/branch/main/graph/badge.svg?token=8IDAVSL014)](https://codecov.io/gh/iuioiua/r2d2)
 
-Fast, simple and lightweight Redis client library for
+Fast, lightweight and simple Redis client library for
 [Deno](https://deno.land/).
 
 ## Features
 
-- The fastest Redis client in Deno by up to 80% (see latest benchmarks in CI).
+- The fastest Redis client in Deno by up to 80% (see benchmarks in CI).
 - Supports RESPv2, RESP3, pipelining and pub/sub.
 - Written to be easily understood and debugged.
 - Encourages the use of actual Redis commands without intermediate abstractions.

@@ -4,41 +4,29 @@
 [![CI](https://github.com/iuioiua/r2d2/actions/workflows/ci.yml/badge.svg)](https://github.com/iuioiua/r2d2/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/iuioiua/r2d2/branch/main/graph/badge.svg?token=8IDAVSL014)](https://codecov.io/gh/iuioiua/r2d2)
 
-Fast, lightweight Redis client library for [Deno](https://deno.land/). Designed
-to be fundamentally simple and encourage the use of actual Redis commands
-without unnecessary intermediate abstractions.
+Fast, simple and lightweight Redis client library for
+[Deno](https://deno.land/).
+
+## Features
+
+- The fastest Redis client in Deno by up to 80% (see latest benchmarks in CI).
+- Supports RESPv2, RESP3, pipelining and pub/sub.
+- Written to be easily understood and debugged.
+- Encourages the use of actual Redis commands without intermediate abstractions.
 
 ## Usage
 
 Check out the documentation
 [here](https://doc.deno.land/https://deno.land/x/r2d2/mod.ts).
 
-## Testing
+## Contributing
 
-```bash
-deno task test
-```
+Before submitting a pull request, please run:
 
-> Note: Redis must be installed on your local machine. For installation
-> instructions, see [here](https://redis.io/docs/getting-started/installation/).
-
-## Benchmarks
-
-```bash
-deno task bench
-```
+1. `deno fmt`
+2. `deno lint`
+3. `deno task test` and ensure all tests pass
+4. `deno task bench` and ensure performance hasn't degraded
 
 > Note: Redis must be installed on your local machine. For installation
 > instructions, see [here](https://redis.io/docs/getting-started/installation/).
-
-## Related
-
-These resources, one way or another, inspired the creation of this module. If
-you're one of the authors, thank you.
-
-- [redis](https://deno.land/x/redis) - 🦕 Redis client for Deno 🍕
-- [tiny-redis](https://github.com/qingant/tiny-redis) - TinyRedis is a Redis
-  server and Redis protocol facilities developed with TypeScript and platformed
-  on Deno.
-- [Native GET and SET operations on REDIS](https://medium.com/deno-the-complete-reference/native-get-and-set-operations-on-redis-c6cd34df1e90) -
-  article with a self-explanatory title.

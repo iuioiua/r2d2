@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  checks:
+  ci:
     # This repo has no os-specific functionality, so best choose the os that's simplest to use.
     runs-on: macos-latest
 

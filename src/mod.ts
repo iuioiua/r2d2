@@ -8,7 +8,7 @@ export { type Command, type Reply, writeCommand };
 /**
  * Sends a command to the Redis server and returns the parsed reply.
  *
- * Example:
+ * @example
  * ```ts
  * import { sendCommand } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *
@@ -32,7 +32,7 @@ export async function sendCommand(
 /**
  * Pipelines commands to the Redis server and returns the parsed replies.
  *
- * Example:
+ * @example
  * ```ts
  * import { pipelineCommands } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *
@@ -59,7 +59,7 @@ export async function pipelineCommands(
 /**
  * Used for pub/sub. Listens for replies from the Redis server.
  *
- * Example:
+ * @example
  * ```ts
  * import { writeCommand, listenReplies } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *

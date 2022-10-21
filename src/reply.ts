@@ -82,7 +82,7 @@ async function readArray(
 }
 
 /**
- * Read but don't return actualy attribute data.
+ * Read but don't return attribute data.
  *
  * @todo include attribute data somehow
  */

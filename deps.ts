@@ -9,4 +9,3 @@ export {
 } from "https://deno.land/std@0.160.0/testing/asserts.ts";
 export { StringReader } from "https://deno.land/std@0.160.0/io/readers.ts";
 export { StringWriter } from "https://deno.land/std@0.160.0/io/writers.ts";
-export { connect } from "https://deno.land/x/redis@v0.27.1/redis.ts";

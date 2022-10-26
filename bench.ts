@@ -1,75 +1,32 @@
-import { connect } from "./deps.ts";
+import { connect } from "https://deno.land/x/redis@v0.27.1/redis.ts";
+import Redis from "npm:ioredis";
+import nodeRedis from "npm:redis";
 
-import { pipelineCommands, sendCommand, writeCommand } from "./mod.ts";
+import { pipelineCommands, sendCommand } from "./mod.ts";
 
+const HOSTNAME = "127.0.0.1";
 const PORT = 6379;
 
 const redisConn = await Deno.connect({ port: PORT });
-const redis = await connect({
-  hostname: "127.0.0.1",
-  port: PORT,
-});
+const denoRedis = await connect({ hostname: HOSTNAME, port: PORT });
+const ioRedis = new Redis({ host: HOSTNAME });
+const nodeRedisClient = nodeRedis.createClient({ socket: { host: HOSTNAME } });
+await nodeRedisClient.connect();
+
+await sendCommand(redisConn, ["FLUSHALL"]);
 
 Deno.bench({
-  name: "r2d2 PING/PONG",
-  group: "PING/PONG",
+  name: "r2d2",
   baseline: true,
   async fn() {
     await sendCommand(redisConn, ["PING"]);
-  },
-});
 
-Deno.bench({
-  name: "redis PING/PONG",
-  group: "PING/PONG",
-  async fn() {
-    await redis.ping();
-  },
-});
-
-Deno.bench({
-  name: "r2d2 SET/GET",
-  group: "SET/GET",
-  baseline: true,
-  async fn() {
     await sendCommand(redisConn, ["SET", "mykey", "Hello"]);
     await sendCommand(redisConn, ["GET", "mykey"]);
-  },
-});
 
-Deno.bench({
-  name: "redis SET/GET",
-  group: "SET/GET",
-  async fn() {
-    await redis.set("mykey", "Hello");
-    await redis.get("mykey");
-  },
-});
+    await sendCommand(redisConn, ["HSET", "hash", "a", "foo", "b", "bar"]);
+    await sendCommand(redisConn, ["HGETALL", "hash"]);
 
-Deno.bench({
-  name: "r2d2 MSET/MGET",
-  group: "MSET/MGET",
-  baseline: true,
-  async fn() {
-    await sendCommand(redisConn, ["MSET", "a", "foo", "b", "bar"]);
-    await sendCommand(redisConn, ["MGET", "a", "b"]);
-  },
-});
-
-Deno.bench({
-  name: "redis MSET/MGET",
-  group: "MSET/MGET",
-  async fn() {
-    await redis.mset({ a: "foo", b: "bar" });
-    await redis.mget("a", "b");
-  },
-});
-
-Deno.bench({
-  name: "r2d2 pipelining",
-  group: "pipelining",
-  baseline: true,
-  async fn() {
     await pipelineCommands(redisConn, [
       ["INCR", "X"],
       ["INCR", "X"],
@@ -80,22 +37,17 @@ Deno.bench({
 });
 
 Deno.bench({
-  name: "r2d2 multiple commands (non-pipelining)",
-  group: "pipelining",
-  baseline: true,
+  name: "deno-redis",
   async fn() {
-    await sendCommand(redisConn, ["INCR", "X"]);
-    await sendCommand(redisConn, ["INCR", "X"]);
-    await sendCommand(redisConn, ["INCR", "X"]);
-    await sendCommand(redisConn, ["INCR", "X"]);
-  },
-});
+    await denoRedis.ping();
 
-Deno.bench({
-  name: "redis pipelining",
-  group: "pipelining",
-  async fn() {
-    const pl = redis.pipeline();
+    await denoRedis.set("mykey", "Hello");
+    await denoRedis.get("mykey");
+
+    await denoRedis.hset("hash", { a: "foo", b: "bar" });
+    await denoRedis.hgetall("hash");
+
+    const pl = denoRedis.pipeline();
     pl.incr("X");
     pl.incr("X");
     pl.incr("X");
@@ -104,8 +56,45 @@ Deno.bench({
   },
 });
 
-addEventListener("unload", async () => {
-  redis.close();
-  await writeCommand(redisConn, ["SHUTDOWN"]);
+Deno.bench({
+  name: "ioredis",
+  async fn() {
+    await ioRedis.ping();
+
+    await ioRedis.set("mykey", "Hello");
+    await ioRedis.get("mykey");
+
+    await ioRedis.hset("hash", { a: "foo", b: "bar" });
+    await ioRedis.hgetall("hash");
+
+    const pl = ioRedis.pipeline();
+    pl.incr("X");
+    pl.incr("X");
+    pl.incr("X");
+    pl.incr("X");
+    await pl.exec();
+  },
+});
+
+Deno.bench({
+  name: "node-redis",
+  async fn() {
+    await nodeRedisClient.ping();
+
+    await nodeRedisClient.set("mykey", "Hello");
+    await nodeRedisClient.get("mykey");
+
+    await nodeRedisClient.hSet("hash", "a", "foo", "b", "bar");
+    await nodeRedisClient.hGetAll("hash");
+  },
+});
+
+addEventListener("beforeunload", async () => {
+  ioRedis.disconnect();
+  await nodeRedisClient.disconnect();
+});
+
+addEventListener("unload", () => {
+  denoRedis.close();
   redisConn.close();
 });

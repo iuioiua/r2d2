@@ -4,7 +4,7 @@ import nodeRedis from "npm:redis";
 
 import { pipelineCommands, sendCommand } from "./mod.ts";
 
-const HOSTNAME = "localhost";
+const HOSTNAME = "127.0.0.1";
 const PORT = 6379;
 
 const redisConn = await Deno.connect({ hostname: HOSTNAME, port: PORT });
@@ -12,8 +12,6 @@ const denoRedis = await connect({ hostname: HOSTNAME, port: PORT });
 const ioRedis = new Redis({ host: HOSTNAME });
 const nodeRedisClient = nodeRedis.createClient({ socket: { host: HOSTNAME } });
 await nodeRedisClient.connect();
-
-await sendCommand(redisConn, ["FLUSHALL"]);
 
 Deno.bench({
   name: "r2d2",

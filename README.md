@@ -25,8 +25,9 @@ Before submitting a pull request, please run:
 
 1. `deno fmt`
 2. `deno lint`
-3. `deno task test` and ensure all tests pass
-4. `deno task bench` and ensure performance hasn't degraded
+3. `deno task redis:start && deno task test` and ensure all tests pass
+4. `deno task redis:start && deno task bench` and ensure performance hasn't
+   degraded
 
 > Note: Redis must be installed on your local machine. For installation
 > instructions, see [here](https://redis.io/docs/getting-started/installation/).

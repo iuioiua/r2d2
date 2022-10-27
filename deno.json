@@ -2,8 +2,8 @@
   "importMap": "import_map.json",
   "tasks": {
     "redis:start": "rm -f dump.rdb && redis-server --daemonize yes",
-    "test": "deno task redis:start && rm -rf cov && deno test --allow-net=127.0.0.1:6379 --trace-ops --coverage=cov --doc",
-    "bench": "deno task redis:start && deno --unstable bench --allow-net=127.0.0.1:6379 --allow-env",
+    "test": "deno test --allow-net=127.0.0.1:6379 --trace-ops --coverage=cov --doc",
+    "bench": "deno --unstable bench --allow-net=127.0.0.1:6379 --allow-env",
     "coverage": "deno coverage cov --exclude='test.ts|deps.ts' --lcov --output=cov.lcov"
   },
   "fmt": {

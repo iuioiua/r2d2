@@ -9,7 +9,7 @@ Fast, lightweight and simple Redis client library for
 
 ## Features
 
-- The fastest Redis client in Deno by up to 80% (see benchmarks in CI).
+- The fastest Redis client in Deno by up to 80%.
 - Supports RESPv2, RESP3, pipelining and pub/sub.
 - Written to be easily understood and debugged.
 - Encourages the use of actual Redis commands without intermediate abstractions.

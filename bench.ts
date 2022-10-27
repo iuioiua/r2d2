@@ -7,7 +7,7 @@ import { pipelineCommands, sendCommand } from "./mod.ts";
 const HOSTNAME = "localhost";
 const PORT = 6379;
 
-const redisConn = await Deno.connect({ port: PORT });
+const redisConn = await Deno.connect({ hostname: HOSTNAME, port: PORT });
 const denoRedis = await connect({ hostname: HOSTNAME, port: PORT });
 const ioRedis = new Redis({ host: HOSTNAME });
 const nodeRedisClient = nodeRedis.createClient({ socket: { host: HOSTNAME } });

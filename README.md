@@ -7,6 +7,12 @@
 Fast, lightweight and simple Redis client library for
 [Deno](https://deno.land/).
 
+## Getting Started
+
+```
+deno run --unstable --allow-net --allow-run https://deno.land/x/r2d2/example.ts
+```
+
 ## Features
 
 - The fastest Redis client in Deno. See below and try benchmarking yourself!

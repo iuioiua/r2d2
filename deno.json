@@ -4,7 +4,7 @@
     "redis:start": "rm -f dump.rdb && redis-server --daemonize yes",
     "test": "deno test --allow-net --trace-ops --coverage=cov --doc",
     "bench": "deno --unstable bench --allow-net --allow-env",
-    "coverage": "deno coverage cov --lcov --output=cov.lcov"
+    "coverage": "deno coverage cov --exclude='example.ts' --lcov --output=cov.lcov"
   },
   "fmt": {
     "files": {

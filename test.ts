@@ -192,8 +192,9 @@ Deno.test("verbatim string", async () => {
 
 /** 3. Combined */
 
+const HOSTNAME = "localhost";
 const PORT = 6379;
-const redisConn = await Deno.connect({ port: PORT });
+const redisConn = await Deno.connect({ hostname: HOSTNAME, port: PORT });
 
 async function sendCommandTest(
   command: Command,

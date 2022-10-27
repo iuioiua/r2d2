@@ -4,7 +4,7 @@ import nodeRedis from "npm:redis";
 
 import { pipelineCommands, sendCommand } from "./mod.ts";
 
-const HOSTNAME = "127.0.0.1";
+const HOSTNAME = "localhost";
 const PORT = 6379;
 
 const redisConn = await Deno.connect({ port: PORT });

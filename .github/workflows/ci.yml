@@ -8,8 +8,14 @@ on:
 
 jobs:
   ci:
-    # This repo has no os-specific functionality, so best choose the os that's simplest to use.
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis
+        ports:
+          # Maps port 6379 on service container to the host
+          - 6379:6379
 
     steps:
       - name: Setup repo
@@ -25,9 +31,6 @@ jobs:
 
       - name: Run linter
         run: deno lint
-
-      - name: Setup Redis
-        run: brew install redis
 
       - name: Run tests
         run: deno task test

@@ -7,12 +7,6 @@
 Fast, lightweight and simple Redis client library for
 [Deno](https://deno.land/).
 
-## Getting Started
-
-```
-deno run --unstable --allow-net --allow-run https://deno.land/x/r2d2/example.ts
-```
-
 ## Features
 
 - The fastest Redis client in Deno. See below and try benchmarking yourself!
@@ -22,8 +16,75 @@ deno run --unstable --allow-net --allow-run https://deno.land/x/r2d2/example.ts
 
 ## Usage
 
-Check out the documentation
+Must be run with `--allow-net` permission. Check out the full documentation
 [here](https://doc.deno.land/https://deno.land/x/r2d2/mod.ts).
+
+### Basic commands
+
+```ts
+import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+
+const redisConn = await Deno.connect({ port: 6379 });
+
+// Returns "OK"
+await sendCommand(redisConn, ["SET", "hello", "world"]);
+
+// Returns "world"
+await sendCommand(redisConn, ["GET", "hello"]);
+```
+
+If you don't care about the reply:
+
+```ts
+import { writeCommand } from "https://deno.land/x/r2d2/mod.ts";
+
+const redisConn = await Deno.connect({ port: 6379 });
+
+// Returns nothing
+await writeCommand(redisConn, ["SHUTDOWN"]);
+```
+
+### Pipelining
+
+```ts
+import { pipelineCommands } from "https://deno.land/x/r2d2/mod.ts";
+
+const redisConn = await Deno.connect({ port: 6379 });
+
+// Returns [1, 2, 3, 4]
+await pipelineCommands(redisConn, [
+  ["INCR", "X"],
+  ["INCR", "X"],
+  ["INCR", "X"],
+  ["INCR", "X"],
+]);
+```
+
+### Pub/Sub
+
+```ts
+import { listenReplies, writeCommand } from "https://deno.land/x/r2d2/mod.ts";
+
+const redisConn = await Deno.connect({ port: 6379 });
+
+await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
+for await (const reply of listenReplies(redisConn)) {
+  // Prints ["subscribe", "mychannel", 1] first iteration
+  console.log(reply);
+}
+```
+
+### Timeout
+
+```ts
+import { deadline } from "https://deno.land/std/async/mod.ts";
+import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+
+const redisConn = await Deno.connect({ port: 6379 });
+
+// Rejects if the command takes longer than 100 ms
+await deadline(await sendCommand(redisConn, ["SLOWLOG", "GET"]), 100);
+```
 
 ## Contributing
 

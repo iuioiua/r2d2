@@ -83,7 +83,7 @@ import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
 const redisConn = await Deno.connect({ port: 6379 });
 
 // Rejects if the command takes longer than 100 ms
-await deadline(await sendCommand(redisConn, ["SLOWLOG", "GET"]), 100);
+await deadline(sendCommand(redisConn, ["SLOWLOG", "GET"]), 100);
 ```
 
 ## Contributing

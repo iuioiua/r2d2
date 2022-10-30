@@ -1,5 +1,5 @@
 import { connect } from "https://deno.land/x/redis@v0.27.1/redis.ts";
-import Redis from "npm:ioredis";
+import RedisImport from "npm:ioredis";
 import nodeRedis from "npm:redis";
 
 import { pipelineCommands, sendCommand } from "./mod.ts";
@@ -9,7 +9,10 @@ const PORT = 6379;
 
 const redisConn = await Deno.connect({ hostname: HOSTNAME, port: PORT });
 const denoRedis = await connect({ hostname: HOSTNAME, port: PORT });
-const ioRedis = new Redis({ host: HOSTNAME });
+/** TODO: remove when https://github.com/luin/ioredis/issues/1642 is fixed */
+// deno-lint-ignore no-explicit-any
+const ioRedis = new (RedisImport as any as typeof RedisImport["default"])();
+
 const nodeRedisClient = nodeRedis.createClient({ socket: { host: HOSTNAME } });
 await nodeRedisClient.connect();
 

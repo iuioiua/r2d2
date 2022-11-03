@@ -19,7 +19,7 @@ Fast, lightweight and simple Redis client library for
 Must be run with `--allow-net` permission. Check out the full documentation
 [here](https://doc.deno.land/https://deno.land/x/r2d2/mod.ts).
 
-### Basic commands
+### RESPv2
 
 ```ts
 import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
@@ -42,6 +42,23 @@ const redisConn = await Deno.connect({ port: 6379 });
 
 // Returns nothing
 await writeCommand(redisConn, ["SHUTDOWN"]);
+```
+
+### RESP3
+
+```ts
+import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+
+const redisConn = await Deno.connect({ port: 6379 });
+
+// Switch to RESP3 protocol
+await sendCommand(redisConn, ["HELLO", 3]);
+
+// Returns 2
+await sendCommand(redisConn, ["HSET", "hash3", "foo", 1, "bar", 2]);
+
+// Returns { foo: "1", bar: "2" }
+await sendCommand(redisConn, ["HGETALL", "hash3"]);
 ```
 
 ### Pipelining

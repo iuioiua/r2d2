@@ -235,6 +235,15 @@ Deno.test("write-only and listening", async () => {
   });
 });
 
+Deno.test("RESP3", async () => {
+  await sendCommand(redisConn, ["HELLO", 3]);
+  await sendCommandTest(["HSET", "hash3", "foo", 1, "bar", 2], 2);
+  await sendCommandTest(["HGETALL", "hash3"], {
+    foo: "1",
+    bar: "2",
+  });
+});
+
 /** This test must be last */
 Deno.test("reject on no reply", async () => {
   await assertRejects(async () => await sendCommand(redisConn, ["SHUTDOWN"]));

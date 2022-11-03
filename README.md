@@ -9,8 +9,9 @@ Fast, lightweight and simple Redis client library for
 
 ## Features
 
+- Supports [RESPv2](#respv2), [RESP3](#resp3), [pipelining](#pipelining) and
+  [pub/sub](#pubsub).
 - The fastest Redis client in Deno. See below and try benchmarking yourself!
-- Supports RESPv2, RESP3, pipelining and pub/sub.
 - Written to be easily understood and debugged.
 - Encourages the use of actual Redis commands without intermediate abstractions.
 

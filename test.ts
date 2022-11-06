@@ -200,6 +200,8 @@ Deno.test("large reply", async () => {
 const PORT = 6379;
 const redisConn = await Deno.connect({ port: PORT });
 
+await sendCommand(redisConn, ["FLUSHALL"]);
+
 async function sendCommandTest(
   command: Command,
   expected: Reply,

@@ -2,6 +2,7 @@
 import { writeAll } from "https://deno.land/std@0.161.0/streams/conversion.ts";
 import { BufReader } from "https://deno.land/std@0.161.0/io/buffer.ts";
 import { chunk } from "https://deno.land/std@0.161.0/collections/chunk.ts";
+import { concat } from "https://deno.land/std@0.161.0/bytes/mod.ts";
 
 /**
  * Sections:
@@ -23,6 +24,7 @@ export type Reply =
 const CRLF = "\r\n";
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
+const BUFFER_SIZE = 4096;
 
 export const ARRAY_PREFIX = "*";
 export const ATTRIBUTE_PREFIX = "|";
@@ -153,14 +155,29 @@ function readBoolean(line: string): boolean {
   return removePrefix(line) === "t";
 }
 
+async function readFullLine(bufReader: BufReader): Promise<string | null> {
+  const parts: Uint8Array[] = [];
+  while (true) {
+    const result = await bufReader.readLine();
+    parts.push(result!.line);
+    if (!result!.more) {
+      return decoder.decode(concat(...parts));
+    }
+  }
+}
+
 /** Also reads verbatim string */
 async function readBulkString(
   line: string,
   bufReader: BufReader,
-): Promise<null | string> {
-  return removePrefix(line) === "-1"
-    ? null
-    : await readReply(bufReader) as string;
+): Promise<string | null> {
+  const length = readNumber(line);
+  if (length === -1) {
+    return null;
+  }
+  return length <= BUFFER_SIZE
+    ? await readReply(bufReader) as string
+    : await readFullLine(bufReader);
 }
 
 async function readError(line: string): Promise<never> {

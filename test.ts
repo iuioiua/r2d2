@@ -190,6 +190,11 @@ Deno.test("verbatim string", async () => {
   await readReplyTest("=15\r\ntxt:Some string\r\n", "txt:Some string");
 });
 
+Deno.test("large reply", async () => {
+  const reply = "a".repeat(4096 * 2);
+  await readReplyTest(`$${reply.length}\r\n${reply}\r\n`, reply);
+});
+
 /** 3. Combined */
 
 const PORT = 6379;

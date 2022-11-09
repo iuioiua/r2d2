@@ -1,3 +1,4 @@
 dump.rdb
 cov/
 cov.lcov
+deno.lock

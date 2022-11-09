@@ -4,10 +4,11 @@ import {
 } from "https://deno.land/std@0.163.0/testing/asserts.ts";
 import { StringReader } from "https://deno.land/std@0.163.0/io/readers.ts";
 import { StringWriter } from "https://deno.land/std@0.163.0/io/writers.ts";
-import { readLines } from "https://deno.land/std@0.163.0/io/buffer.ts";
+import { readStringDelim } from "https://deno.land/std@0.163.0/io/buffer.ts";
 
 import {
   type Command,
+  CRLF,
   listenReplies,
   pipelineCommands,
   readReply,
@@ -38,14 +39,15 @@ Deno.test("write command", async () => {
 
 async function readReplyTest(output: string, expected: Reply) {
   assertEquals(
-    await readReply(readLines(new StringReader(output))),
+    await readReply(readStringDelim(new StringReader(output), CRLF)),
     expected,
   );
 }
 
 async function readReplyRejectTest(output: string, expected: string) {
   await assertRejects(
-    async () => await readReply(readLines(new StringReader(output))),
+    async () =>
+      await readReply(readStringDelim(new StringReader(output), CRLF)),
     expected,
   );
 }
@@ -238,9 +240,7 @@ Deno.test("RESP3", async () => {
   });
 });
 
-/** This test must be last */
-Deno.test("reject on no reply", async () => {
-  await assertRejects(async () => await sendCommand(redisConn, ["SHUTDOWN"]));
+addEventListener("unload", async () => {
+  await sendCommand(redisConn, ["SHUTDOWN"]);
+  redisConn.close();
 });
-
-addEventListener("unload", () => redisConn.close());

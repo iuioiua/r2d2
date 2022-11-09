@@ -4,7 +4,7 @@ import {
 } from "https://deno.land/std@0.162.0/testing/asserts.ts";
 import { StringReader } from "https://deno.land/std@0.162.0/io/readers.ts";
 import { StringWriter } from "https://deno.land/std@0.162.0/io/writers.ts";
-import { BufReader } from "https://deno.land/std@0.162.0/io/buffer.ts";
+import { readLines } from "https://deno.land/std@0.162.0/io/buffer.ts";
 
 import {
   type Command,
@@ -38,14 +38,14 @@ Deno.test("write command", async () => {
 
 async function readReplyTest(output: string, expected: Reply) {
   assertEquals(
-    await readReply(new BufReader(new StringReader(output))),
+    await readReply(readLines(new StringReader(output))),
     expected,
   );
 }
 
 async function readReplyRejectTest(output: string, expected: string) {
   await assertRejects(
-    async () => await readReply(new BufReader(new StringReader(output))),
+    async () => await readReply(readLines(new StringReader(output))),
     expected,
   );
 }

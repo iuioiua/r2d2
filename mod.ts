@@ -1,8 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { writeAll } from "https://deno.land/std@0.162.0/streams/conversion.ts";
-import { BufReader } from "https://deno.land/std@0.162.0/io/buffer.ts";
+import { readLines } from "https://deno.land/std@0.162.0/io/buffer.ts";
 import { chunk } from "https://deno.land/std@0.162.0/collections/chunk.ts";
-import { concat } from "https://deno.land/std@0.162.0/bytes/mod.ts";
 
 /**
  * Sections:
@@ -23,8 +22,6 @@ export type Reply =
 
 const CRLF = "\r\n";
 const encoder = new TextEncoder();
-const decoder = new TextDecoder();
-const BUFFER_SIZE = 4096;
 
 export const ARRAY_PREFIX = "*";
 export const ATTRIBUTE_PREFIX = "|";
@@ -97,22 +94,22 @@ function toObject(array: any[]): Record<string, any> {
 
 async function readNReplies(
   length: number,
-  bufReader: BufReader,
+  iterator: AsyncIterableIterator<string>,
 ): Promise<Reply[]> {
   const replies: Reply[] = [];
   for (let i = 0; i < length; i++) {
-    replies.push(await readReply(bufReader));
+    replies.push(await readReply(iterator));
   }
   return replies;
 }
 
 async function readStreamedReply(
   delimiter: string,
-  bufReader: BufReader,
+  iterator: AsyncIterableIterator<string>,
 ): Promise<Reply[]> {
   const replies: Reply[] = [];
   while (true) {
-    const reply = await readReply(bufReader);
+    const reply = await readReply(iterator);
     if (reply === delimiter) {
       break;
     }
@@ -123,10 +120,10 @@ async function readStreamedReply(
 
 async function readArray(
   line: string,
-  bufReader: BufReader,
+  iterator: AsyncIterableIterator<string>,
 ): Promise<null | Reply[]> {
   const length = readNumber(line);
-  return length === -1 ? null : await readNReplies(length, bufReader);
+  return length === -1 ? null : await readNReplies(length, iterator);
 }
 
 /**
@@ -136,48 +133,33 @@ async function readArray(
  */
 async function readAttribute(
   line: string,
-  bufReader: BufReader,
+  iterator: AsyncIterableIterator<string>,
 ): Promise<null | Reply> {
-  await readMap(line, bufReader);
-  return await readReply(bufReader);
+  await readMap(line, iterator);
+  return await readReply(iterator);
 }
 
 function readBigNumber(line: string): BigInt {
   return BigInt(removePrefix(line));
 }
 
-async function readBlobError(bufReader: BufReader): Promise<never> {
+async function readBlobError(
+  iterator: AsyncIterableIterator<string>,
+): Promise<never> {
   /** Skip to reading the next line, which is a string */
-  return await Promise.reject(await readReply(bufReader) as string);
+  return await Promise.reject(await readReply(iterator) as string);
 }
 
 function readBoolean(line: string): boolean {
   return removePrefix(line) === "t";
 }
 
-async function readFullLine(bufReader: BufReader): Promise<string | null> {
-  const parts: Uint8Array[] = [];
-  while (true) {
-    const result = await bufReader.readLine();
-    parts.push(result!.line);
-    if (!result!.more) {
-      return decoder.decode(concat(...parts));
-    }
-  }
-}
-
 /** Also reads verbatim string */
 async function readBulkString(
   line: string,
-  bufReader: BufReader,
+  iterator: AsyncIterableIterator<string>,
 ): Promise<string | null> {
-  const length = readNumber(line);
-  if (length === -1) {
-    return null;
-  }
-  return length <= BUFFER_SIZE
-    ? await readReply(bufReader) as string
-    : await readFullLine(bufReader);
+  return readNumber(line) === -1 ? null : await readReply(iterator) as string;
 }
 
 async function readError(line: string): Promise<never> {
@@ -186,10 +168,10 @@ async function readError(line: string): Promise<never> {
 
 async function readMap(
   line: string,
-  bufReader: BufReader,
+  iterator: AsyncIterableIterator<string>,
 ): Promise<Record<string, any>> {
   const length = readNumber(line) * 2;
-  const array = await readNReplies(length, bufReader);
+  const array = await readNReplies(length, iterator);
   return toObject(array);
 }
 
@@ -208,35 +190,41 @@ function readNumber(line: string): number {
 
 async function readSet(
   line: string,
-  bufReader: BufReader,
+  iterator: AsyncIterableIterator<string>,
 ): Promise<Set<Reply>> {
-  return new Set(await readArray(line, bufReader));
+  return new Set(await readArray(line, iterator));
 }
 
 function readSimpleString(line: string): string {
   return removePrefix(line);
 }
 
-async function readStreamedArray(bufReader: BufReader): Promise<Reply[]> {
-  return await readStreamedReply(STREAMED_AGGREGATE_END_DELIMITER, bufReader);
+async function readStreamedArray(
+  iterator: AsyncIterableIterator<string>,
+): Promise<Reply[]> {
+  return await readStreamedReply(STREAMED_AGGREGATE_END_DELIMITER, iterator);
 }
 
 async function readStreamedMap(
-  bufReader: BufReader,
+  iterator: AsyncIterableIterator<string>,
 ): Promise<Record<string, any>> {
   const array = await readStreamedReply(
     STREAMED_AGGREGATE_END_DELIMITER,
-    bufReader,
+    iterator,
   );
   return toObject(array);
 }
 
-async function readStreamedSet(bufReader: BufReader): Promise<Set<Reply>> {
-  return new Set(await readStreamedArray(bufReader));
+async function readStreamedSet(
+  iterator: AsyncIterableIterator<string>,
+): Promise<Set<Reply>> {
+  return new Set(await readStreamedArray(iterator));
 }
 
-async function readStreamedString(bufReader: BufReader): Promise<string> {
-  return (await readStreamedReply(STREAMED_STRING_END_DELIMITER, bufReader))
+async function readStreamedString(
+  iterator: AsyncIterableIterator<string>,
+): Promise<string> {
+  return (await readStreamedReply(STREAMED_STRING_END_DELIMITER, iterator))
     /** Remove byte counts */
     .filter((line) => !(line as string).startsWith(";"))
     .join("");
@@ -247,51 +235,49 @@ async function readStreamedString(bufReader: BufReader): Promise<string> {
  *
  * See {@link https://redis.io/docs/reference/protocol-spec/#resp-protocol-description}
  */
-export async function readReply(bufReader: BufReader): Promise<Reply> {
-  const result = await bufReader.readLine();
-  if (!result) {
-    return await Promise.reject("No reply received from Redis server");
-  }
-  const line = decoder.decode(result.line);
-  switch (line.charAt(0)) {
+export async function readReply(
+  iterator: AsyncIterableIterator<string>,
+): Promise<Reply> {
+  const { value } = await iterator.next();
+  switch (value.charAt(0)) {
     case ARRAY_PREFIX:
     case PUSH_PREFIX:
-      return isSteamedReply(line)
-        ? await readStreamedArray(bufReader)
-        : await readArray(line, bufReader);
+      return isSteamedReply(value)
+        ? await readStreamedArray(iterator)
+        : await readArray(value, iterator);
     case ATTRIBUTE_PREFIX:
-      return await readAttribute(line, bufReader);
+      return await readAttribute(value, iterator);
     case BIG_NUMBER_PREFIX:
-      return readBigNumber(line);
+      return readBigNumber(value);
     case BLOB_ERROR_PREFIX:
-      return readBlobError(bufReader);
+      return readBlobError(iterator);
     case BOOLEAN_PREFIX:
-      return readBoolean(line);
+      return readBoolean(value);
     case BULK_STRING_PREFIX:
     case VERBATIM_STRING_PREFIX:
-      return isSteamedReply(line)
-        ? await readStreamedString(bufReader)
-        : await readBulkString(line, bufReader);
+      return isSteamedReply(value)
+        ? await readStreamedString(iterator)
+        : await readBulkString(value, iterator);
     case DOUBLE_PREFIX:
     case INTEGER_PREFIX:
-      return readNumber(line);
+      return readNumber(value);
     case ERROR_PREFIX:
-      return readError(line);
+      return readError(value);
     case MAP_PREFIX:
-      return isSteamedReply(line)
-        ? await readStreamedMap(bufReader)
-        : await readMap(line, bufReader);
+      return isSteamedReply(value)
+        ? await readStreamedMap(iterator)
+        : await readMap(value, iterator);
     case NULL_PREFIX:
       return null;
     case SET_PREFIX:
-      return isSteamedReply(line)
-        ? await readStreamedSet(bufReader)
-        : await readSet(line, bufReader);
+      return isSteamedReply(value)
+        ? await readStreamedSet(iterator)
+        : await readSet(value, iterator);
     case SIMPLE_STRING_PREFIX:
-      return readSimpleString(line);
+      return readSimpleString(value);
     /** No prefix */
     default:
-      return line;
+      return value;
   }
 }
 
@@ -318,7 +304,7 @@ export async function sendCommand(
   command: Command,
 ): Promise<Reply> {
   await writeCommand(redisConn, command);
-  return await readReply(new BufReader(redisConn));
+  return await readReply(readLines(redisConn));
 }
 
 /**
@@ -345,7 +331,7 @@ export async function pipelineCommands(
 ): Promise<Reply[]> {
   const string = commands.map(createCommandString).join("");
   await writeAll(redisConn, encoder.encode(string));
-  return readNReplies(commands.length, new BufReader(redisConn));
+  return readNReplies(commands.length, readLines(redisConn));
 }
 
 /**
@@ -368,8 +354,8 @@ export async function pipelineCommands(
 export async function* listenReplies(
   redisConn: Deno.Conn,
 ): AsyncIterableIterator<Reply> {
-  const bufReader = new BufReader(redisConn);
+  const iterator = readLines(redisConn);
   while (true) {
-    yield await readReply(bufReader);
+    yield await readReply(iterator);
   }
 }

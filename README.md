@@ -9,8 +9,8 @@ Fast, lightweight and simple Redis client library for
 
 ## Features
 
-- Supports [RESPv2](#respv2), [RESP3](#resp3), [pipelining](#pipelining) and
-  [pub/sub](#pubsub).
+- Supports [RESPv2](#respv2), [RESP3](#resp3), [pipelining](#pipelining),
+  [pub/sub](#pubsub) and [transactions](#transactions).
 - The fastest Redis client in Deno. See below and try benchmarking yourself!
 - Written to be easily understood and debugged.
 - Encourages the use of actual Redis commands without intermediate abstractions.
@@ -90,6 +90,26 @@ for await (const reply of listenReplies(redisConn)) {
   // Prints ["subscribe", "mychannel", 1] first iteration
   console.log(reply);
 }
+```
+
+### Transactions
+
+```ts
+import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+
+const redisConn = await Deno.connect({ port: 6379 });
+
+// Returns "OK"
+await sendCommand(redisConn, ["MULTI"]);
+
+// Returns "QUEUED"
+await sendCommand(redisConn, ["INCR", "FOO"]);
+
+// Returns "QUEUED"
+await sendCommand(redisConn, ["INCR", "FOO"]);
+
+// Returns [1, 1]
+await sendCommand(redisConn, ["EXEC"]);
 ```
 
 ### Timeout

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { writeAll } from "https://deno.land/std@0.162.0/streams/conversion.ts";
-import { readLines } from "https://deno.land/std@0.162.0/io/buffer.ts";
-import { chunk } from "https://deno.land/std@0.162.0/collections/chunk.ts";
+import { writeAll } from "https://deno.land/std@0.163.0/streams/conversion.ts";
+import { readLines } from "https://deno.land/std@0.163.0/io/buffer.ts";
+import { chunk } from "https://deno.land/std@0.163.0/collections/chunk.ts";
 
 /**
  * Sections:

@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { writeAll } from "https://deno.land/std@0.163.0/streams/conversion.ts";
-import { readLines } from "https://deno.land/std@0.163.0/io/buffer.ts";
+import { readStringDelim } from "https://deno.land/std@0.163.0/io/buffer.ts";
 import { chunk } from "https://deno.land/std@0.163.0/collections/chunk.ts";
 
 /**
@@ -20,7 +20,7 @@ export type Reply =
   | Record<string, any>
   | Reply[];
 
-const CRLF = "\r\n";
+export const CRLF = "\r\n";
 const encoder = new TextEncoder();
 
 export const ARRAY_PREFIX = "*";
@@ -304,7 +304,7 @@ export async function sendCommand(
   command: Command,
 ): Promise<Reply> {
   await writeCommand(redisConn, command);
-  return await readReply(readLines(redisConn));
+  return await readReply(readStringDelim(redisConn, CRLF));
 }
 
 /**
@@ -331,7 +331,7 @@ export async function pipelineCommands(
 ): Promise<Reply[]> {
   const string = commands.map(createCommandString).join("");
   await writeAll(redisConn, encoder.encode(string));
-  return readNReplies(commands.length, readLines(redisConn));
+  return readNReplies(commands.length, readStringDelim(redisConn, CRLF));
 }
 
 /**
@@ -354,7 +354,7 @@ export async function pipelineCommands(
 export async function* listenReplies(
   redisConn: Deno.Conn,
 ): AsyncIterableIterator<Reply> {
-  const iterator = readLines(redisConn);
+  const iterator = readStringDelim(redisConn, CRLF);
   while (true) {
     yield await readReply(iterator);
   }

@@ -62,6 +62,8 @@ Deno.test("mixed array", async () =>
 
 Deno.test("empty array", async () => await readReplyTest("*0\r\n", []));
 
+Deno.test("null array", async () => await readReplyTest("*-1\r\n", null));
+
 Deno.test("nested array", async () =>
   await readReplyTest("*2\r\n*3\r\n:1\r\n$5\r\nhello\r\n:2\r\n#f\r\n", [[
     1,

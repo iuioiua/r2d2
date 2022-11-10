@@ -147,7 +147,7 @@ async function readBlobError(
   iterator: AsyncIterableIterator<string>,
 ): Promise<never> {
   /** Skip to reading the next line, which is a string */
-  return await Promise.reject(await readReply(iterator) as string);
+  return await Promise.reject((await iterator.next()).value!);
 }
 
 function readBoolean(line: string): boolean {
@@ -159,7 +159,7 @@ async function readBulkString(
   line: string,
   iterator: AsyncIterableIterator<string>,
 ): Promise<string | null> {
-  return readNumber(line) === -1 ? null : await readReply(iterator) as string;
+  return readNumber(line) === -1 ? null : (await iterator.next()).value!;
 }
 
 async function readError(line: string): Promise<never> {

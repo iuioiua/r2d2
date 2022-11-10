@@ -20,28 +20,28 @@ export type Reply =
   | Record<string, any>
   | Reply[];
 
-export const CRLF = "\r\n";
+const CRLF = "\r\n";
 const encoder = new TextEncoder();
 
-export const ARRAY_PREFIX = "*";
-export const ATTRIBUTE_PREFIX = "|";
-export const BIG_NUMBER_PREFIX = "(";
-export const BLOB_ERROR_PREFIX = "!";
-export const BOOLEAN_PREFIX = "#";
-export const BULK_STRING_PREFIX = "$";
-export const DOUBLE_PREFIX = ",";
-export const ERROR_PREFIX = "-";
-export const INTEGER_PREFIX = ":";
-export const MAP_PREFIX = "%";
-export const NULL_PREFIX = "_";
-export const PUSH_PREFIX = ">";
-export const SET_PREFIX = "~";
-export const SIMPLE_STRING_PREFIX = "+";
-export const VERBATIM_STRING_PREFIX = "=";
+const ARRAY_PREFIX = "*";
+const ATTRIBUTE_PREFIX = "|";
+const BIG_NUMBER_PREFIX = "(";
+const BLOB_ERROR_PREFIX = "!";
+const BOOLEAN_PREFIX = "#";
+const BULK_STRING_PREFIX = "$";
+const DOUBLE_PREFIX = ",";
+const ERROR_PREFIX = "-";
+const INTEGER_PREFIX = ":";
+const MAP_PREFIX = "%";
+const NULL_PREFIX = "_";
+const PUSH_PREFIX = ">";
+const SET_PREFIX = "~";
+const SIMPLE_STRING_PREFIX = "+";
+const VERBATIM_STRING_PREFIX = "=";
 
-export const STREAMED_REPLY_START_DELIMITER = "?";
-export const STREAMED_STRING_END_DELIMITER = ";0";
-export const STREAMED_AGGREGATE_END_DELIMITER = ".";
+const STREAMED_REPLY_START_DELIMITER = "?";
+const STREAMED_STRING_END_DELIMITER = ";0";
+const STREAMED_AGGREGATE_END_DELIMITER = ".";
 
 /** 1. Request */
 

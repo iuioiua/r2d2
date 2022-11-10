@@ -8,7 +8,6 @@ import { readStringDelim } from "https://deno.land/std@0.163.0/io/buffer.ts";
 
 import {
   type Command,
-  CRLF,
   listenReplies,
   pipelineCommands,
   readReply,
@@ -36,6 +35,8 @@ Deno.test("write command", async () => {
 });
 
 /** 2. Reply */
+
+const CRLF = "\r\n";
 
 async function readReplyTest(output: string, expected: Reply) {
   assertEquals(

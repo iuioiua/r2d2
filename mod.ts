@@ -3,14 +3,9 @@ import { writeAll } from "https://deno.land/std@0.163.0/streams/conversion.ts";
 import { readStringDelim } from "https://deno.land/std@0.163.0/io/buffer.ts";
 import { chunk } from "https://deno.land/std@0.163.0/collections/chunk.ts";
 
-/**
- * Sections:
- * 1. Request
- * 2. Reply
- * 3. Combined
- */
-
+/** Redis command */
 export type Command = (string | number)[];
+/** Redis reply */
 export type Reply =
   | string
   | number
@@ -62,7 +57,7 @@ function createCommandString(command: Command): string {
 /**
  * Just writes a command to the Redis server.
  *
- * @example
+ * Example:
  * ```ts
  * import { writeCommand } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *
@@ -286,7 +281,7 @@ export async function readReply(
 /**
  * Sends a command to the Redis server and returns the parsed reply.
  *
- * @example
+ * Example:
  * ```ts
  * import { sendCommand } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *
@@ -310,7 +305,7 @@ export async function sendCommand(
 /**
  * Pipelines commands to the Redis server and returns the parsed replies.
  *
- * @example
+ * Example:
  * ```ts
  * import { pipelineCommands } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *
@@ -337,7 +332,7 @@ export async function pipelineCommands(
 /**
  * Used for pub/sub. Listens for replies from the Redis server.
  *
- * @example
+ * Example:
  * ```ts
  * import { writeCommand, listenReplies } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *

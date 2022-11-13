@@ -112,6 +112,35 @@ await sendCommand(redisConn, ["INCR", "FOO"]);
 await sendCommand(redisConn, ["EXEC"]);
 ```
 
+### Eval Script
+
+```ts
+import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+
+const redisConn = await Deno.connect({ port: 6379 });
+
+// Returns "hello"
+await sendCommand(redisConn, ["EVAL", "return ARGV[1]", 0, "hello"]);
+```
+
+### Lua Script
+
+```ts
+import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+
+const redisConn = await Deno.connect({ port: 6379 });
+
+// Returns "mylib"
+await sendCommand(redisConn, [
+  "FUNCTION",
+  "LOAD",
+  "#!lua name=mylib\nredis.register_function('knockknock', function() return 'Who\\'s there?' end)",
+]);
+
+// Returns "Who's there?"
+await sendCommand(redisConn, ["FCALL", "knockknock", 0]);
+```
+
 ### Timeout
 
 ```ts

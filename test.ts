@@ -234,6 +234,19 @@ Deno.test("write-only and listening", async () => {
   });
 });
 
+Deno.test("eval script", async () => {
+  await sendCommandTest(["EVAL", "return ARGV[1]", 0, "hello"], "hello");
+});
+
+Deno.test("Lua script", async () => {
+  await sendCommandTest([
+    "FUNCTION",
+    "LOAD",
+    "#!lua name=mylib\nredis.register_function('knockknock', function() return 'Who\\'s there?' end)",
+  ], "mylib");
+  await sendCommandTest(["FCALL", "knockknock", 0], "Who's there?");
+});
+
 Deno.test("RESP3", async () => {
   await sendCommand(redisConn, ["HELLO", 3]);
   await sendCommandTest(["HSET", "hash3", "foo", 1, "bar", 2], 2);

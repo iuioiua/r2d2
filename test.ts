@@ -8,8 +8,8 @@ import { readStringDelim } from "https://deno.land/std@0.163.0/io/buffer.ts";
 
 import {
   type Command,
-  listenReplies,
   pipelineCommands,
+  readReplies,
   readReply,
   type Reply,
   sendCommand,
@@ -222,7 +222,7 @@ Deno.test("pipelining", async () => {
 
 Deno.test("write-only and listening", async () => {
   await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
-  const iterator = listenReplies(redisConn);
+  const iterator = readReplies(redisConn);
   assertEquals(await iterator.next(), {
     value: ["subscribe", "mychannel", 1],
     done: false,

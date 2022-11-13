@@ -10,7 +10,8 @@ Fast, lightweight and simple Redis client library for
 ## Features
 
 - Supports [RESPv2](#respv2), [RESP3](#resp3), [pipelining](#pipelining),
-  [pub/sub](#pubsub) and [transactions](#transactions).
+  [pub/sub](#pubsub), [transactions](#transactions),
+  [eval scripts](#eval-script) and [Lua scripts](#lua-script).
 - The fastest Redis client in Deno. See below and try benchmarking yourself!
 - Written to be easily understood and debugged.
 - Encourages the use of actual Redis commands without intermediate abstractions.

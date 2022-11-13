@@ -345,8 +345,29 @@ export async function pipelineCommands(
  *   console.log(reply);
  * }
  * ```
+ *
+ * @deprecated Use `readReplies` instead. This will be removed in v1.1.
  */
-export async function* listenReplies(
+export const listenReplies = readReplies;
+
+/**
+ * Used for pub/sub. Listens for replies from the Redis server.
+ *
+ * Example:
+ * ```ts
+ * import { writeCommand, readReplies } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
+ *
+ * const redisConn = await Deno.connect({ port: 6379 });
+ *
+ * await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
+ *
+ * for await (const reply of readReplies(redisConn)) {
+ *   // Prints ["subscribe", "mychannel", 1] first iteration
+ *   console.log(reply);
+ * }
+ * ```
+ */
+export async function* readReplies(
   redisConn: Deno.Conn,
 ): AsyncIterableIterator<Reply> {
   const iterator = readStringDelim(redisConn, CRLF);

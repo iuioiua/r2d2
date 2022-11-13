@@ -81,12 +81,12 @@ await pipelineCommands(redisConn, [
 ### Pub/Sub
 
 ```ts
-import { listenReplies, writeCommand } from "https://deno.land/x/r2d2/mod.ts";
+import { readReplies, writeCommand } from "https://deno.land/x/r2d2/mod.ts";
 
 const redisConn = await Deno.connect({ port: 6379 });
 
 await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
-for await (const reply of listenReplies(redisConn)) {
+for await (const reply of readReplies(redisConn)) {
   // Prints ["subscribe", "mychannel", 1] first iteration
   console.log(reply);
 }

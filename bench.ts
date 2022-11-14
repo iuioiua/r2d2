@@ -87,6 +87,12 @@ Deno.bench({
 
     await nodeRedisClient.hSet("hash", "a", "foo", "b", "bar");
     await nodeRedisClient.hGetAll("hash");
+
+    /** Autopipelining */
+    await nodeRedisClient.incr("X");
+    await nodeRedisClient.incr("X");
+    await nodeRedisClient.incr("X");
+    await nodeRedisClient.incr("X");
   },
 });
 

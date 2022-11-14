@@ -12,7 +12,8 @@ Fast, lightweight and simple Redis client library for
 - Supports [RESPv2](#respv2), [RESP3](#resp3), [pipelining](#pipelining),
   [pub/sub](#pubsub), [transactions](#transactions),
   [eval scripts](#eval-script) and [Lua scripts](#lua-script).
-- The fastest Redis client in Deno. See below and try benchmarking yourself!
+- The fastest Redis client in Deno. [See below](#benchmarks) and
+  [try benchmarking yourself](#contributing)!
 - Written to be easily understood and debugged.
 - Encourages the use of actual Redis commands without intermediate abstractions.
 
@@ -191,6 +192,8 @@ summary
    2.57x faster than npm:redis
 ```
 
+> Node: Results were produced using `deno task redis:start && deno task bench`.
+
 ### Size
 
 | Module      | Size (KB) | Unique dependencies |
@@ -199,3 +202,5 @@ summary
 | deno-redis  | 183.73    | 24                  |
 | npm:ioredis | 890.76    | 10                  |
 | npm:redis   | 881.2     | 9                   |
+
+> Note: Results were produced using `deno info <module>`

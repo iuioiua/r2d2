@@ -58,7 +58,7 @@ Deno.bench({
 });
 
 Deno.bench({
-  name: "ioredis",
+  name: "npm:ioredis",
   async fn() {
     await ioRedis.ping();
 
@@ -78,7 +78,7 @@ Deno.bench({
 });
 
 Deno.bench({
-  name: "node-redis",
+  name: "npm:redis",
   async fn() {
     await nodeRedisClient.ping();
 

@@ -166,3 +166,36 @@ Before submitting a pull request, please run:
 
 > Note: Redis must be installed on your local machine. For installation
 > instructions, see [here](https://redis.io/docs/getting-started/installation/).
+
+## Comparison
+
+Data recorded on November 15, 2022.
+
+### Benchmarks
+
+```
+cpu: Apple M2
+runtime: deno 1.28.0 (aarch64-apple-darwin)
+
+benchmark        time (avg)             (min … max)       p75       p99      p995
+--------------------------------------------------- -----------------------------
+r2d2         170.93 µs/iter   (140.42 µs … 5.06 ms) 172.67 µs 304.33 µs 361.25 µs
+deno-redis   248.97 µs/iter   (199.17 µs … 4.09 ms) 247.33 µs 547.29 µs  618.5 µs
+npm:ioredis  316.15 µs/iter   (174.42 µs … 3.84 ms) 245.12 µs   3.28 ms   3.44 ms
+npm:redis    439.12 µs/iter   (263.12 µs … 3.72 ms) 338.38 µs   3.33 ms    3.4 ms
+
+summary
+  r2d2
+   1.46x faster than deno-redis
+   1.85x faster than npm:ioredis
+   2.57x faster than npm:redis
+```
+
+### Size
+
+| Module      | Size (KB) | Unique dependencies |
+| ----------- | --------- | ------------------- |
+| r2d2        | 75.85     | 8                   |
+| deno-redis  | 183.73    | 24                  |
+| npm:ioredis | 890.76    | 10                  |
+| npm:redis   | 881.2     | 9                   |

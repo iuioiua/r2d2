@@ -4,7 +4,7 @@ import {
 } from "https://deno.land/std@0.164.0/testing/asserts.ts";
 import { StringReader } from "https://deno.land/std@0.164.0/io/readers.ts";
 import { StringWriter } from "https://deno.land/std@0.164.0/io/writers.ts";
-import { readStringDelim } from "https://deno.land/std@0.164.0/io/buffer.ts";
+import { readDelim } from "https://deno.land/std@0.164.0/io/buffer.ts";
 
 import {
   type Command,
@@ -36,11 +36,13 @@ Deno.test("write command", async () => {
 
 /** 2. Reply */
 
+const encoder = new TextEncoder();
+
 const CRLF = "\r\n";
 
 async function readReplyTest(output: string, expected: Reply) {
   assertEquals(
-    await readReply(readStringDelim(new StringReader(output), CRLF)),
+    await readReply(readDelim(new StringReader(output), encoder.encode(CRLF))),
     expected,
   );
 }
@@ -48,7 +50,9 @@ async function readReplyTest(output: string, expected: Reply) {
 async function readReplyRejectTest(output: string, expected: string) {
   await assertRejects(
     async () =>
-      await readReply(readStringDelim(new StringReader(output), CRLF)),
+      await readReply(
+        readDelim(new StringReader(output), encoder.encode(CRLF)),
+      ),
     expected,
   );
 }

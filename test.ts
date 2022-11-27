@@ -113,6 +113,12 @@ Deno.test("emtpy bulk string", async () =>
 
 Deno.test("null bulk string", async () => await readReplyTest("$-1\r\n", null));
 
+Deno.test("raw bulk string", async () => {
+  const data = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assertEquals(await sendCommand(redisConn, ["SET", "binary", data]), "OK");
+  assertEquals(await sendCommand(redisConn, ["GET", "binary"], true), data);
+});
+
 Deno.test("blob error", async () => {
   await readReplyRejectTest(
     "!21\r\nSYNTAX invalid syntax\r\n",

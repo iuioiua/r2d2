@@ -2,9 +2,10 @@
 import { writeAll } from "https://deno.land/std@0.166.0/streams/conversion.ts";
 import { readDelim } from "https://deno.land/std@0.166.0/io/buffer.ts";
 import { chunk } from "https://deno.land/std@0.166.0/collections/chunk.ts";
+import { BytesList } from "https://deno.land/std@0.166.0/bytes/bytes_list.ts";
 
 /** Redis command */
-export type Command = (string | number)[];
+export type Command = (string | number | Uint8Array)[];
 /** Redis reply */
 export type Reply =
   | string
@@ -15,16 +16,19 @@ export type Reply =
   | Record<string, any>
   | Reply[];
 
-const CRLF = "\r\n";
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
+const CRLF = "\r\n";
 
-const ARRAY_PREFIX = "*".charCodeAt(0);
+const ARRAY_PREFIX_STRING = "*";
+const BULK_STRING_PREFIX_STRING = "$";
+
+const ARRAY_PREFIX = ARRAY_PREFIX_STRING.charCodeAt(0);
 const ATTRIBUTE_PREFIX = "|".charCodeAt(0);
 const BIG_NUMBER_PREFIX = "(".charCodeAt(0);
 const BLOB_ERROR_PREFIX = "!".charCodeAt(0);
 const BOOLEAN_PREFIX = "#".charCodeAt(0);
-const BULK_STRING_PREFIX = "$".charCodeAt(0);
+const BULK_STRING_PREFIX = BULK_STRING_PREFIX_STRING.charCodeAt(0);
 const DOUBLE_PREFIX = ",".charCodeAt(0);
 const ERROR_PREFIX = "-".charCodeAt(0);
 const INTEGER_PREFIX = ":".charCodeAt(0);
@@ -41,19 +45,41 @@ const STREAMED_AGGREGATE_END_DELIMITER = ".";
 
 /** 1. Request */
 
-/**
- * Transforms a command, which is an array of arguments, into an RESP request.
- *
- * See {@link https://redis.io/docs/reference/protocol-spec/#send-commands-to-a-redis-server}
- */
-function createCommandString(command: Command): string {
+function createRawRequest(command: Command): Uint8Array {
+  const lines = new BytesList();
+  lines.add(encoder.encode(ARRAY_PREFIX_STRING + command.length + CRLF));
+  for (const arg of command) {
+    const bytes = arg instanceof Uint8Array
+      ? arg
+      : encoder.encode(arg.toString());
+    lines.add(
+      encoder.encode(BULK_STRING_PREFIX_STRING + bytes.byteLength + CRLF),
+    );
+    lines.add(bytes);
+    lines.add(encoder.encode(CRLF));
+  }
+  return lines.concat();
+}
+
+function createStringRequest(command: (string | number)[]): Uint8Array {
   let string = String.fromCharCode(ARRAY_PREFIX) + command.length + CRLF;
   for (const arg of command) {
     string += String.fromCharCode(BULK_STRING_PREFIX) + arg.toString().length +
       CRLF +
       arg + CRLF;
   }
-  return string;
+  return encoder.encode(string);
+}
+
+/**
+ * Transforms a command, which is an array of arguments, into an RESP request.
+ *
+ * See {@link https://redis.io/docs/reference/protocol-spec/#send-commands-to-a-redis-server}
+ */
+function createRequest(command: Command): Uint8Array {
+  return command.some((arg) => arg instanceof Uint8Array)
+    ? createRawRequest(command)
+    : createStringRequest(command as (string | number)[]);
 }
 
 /**
@@ -72,7 +98,7 @@ export async function writeCommand(
   writer: Deno.Writer,
   command: Command,
 ): Promise<void> {
-  await writeAll(writer, encoder.encode(createCommandString(command)));
+  await writeAll(writer, createRequest(command));
 }
 
 /** 2. Reply */
@@ -92,10 +118,11 @@ function toObject(array: any[]): Record<string, any> {
 async function readNReplies(
   length: number,
   iterator: AsyncIterableIterator<Uint8Array>,
+  raw = false,
 ): Promise<Reply[]> {
   const replies: Reply[] = [];
   for (let i = 0; i < length; i++) {
-    replies.push(await readReply(iterator));
+    replies.push(await readReply(iterator, raw));
   }
   return replies;
 }
@@ -103,10 +130,11 @@ async function readNReplies(
 async function readStreamedReply(
   delimiter: string,
   iterator: AsyncIterableIterator<Uint8Array>,
+  raw = false,
 ): Promise<Reply[]> {
   const replies: Reply[] = [];
   while (true) {
-    const reply = await readReply(iterator);
+    const reply = await readReply(iterator, raw);
     if (reply === delimiter) {
       break;
     }
@@ -131,9 +159,10 @@ async function readArray(
 async function readAttribute(
   line: Uint8Array,
   iterator: AsyncIterableIterator<Uint8Array>,
+  raw = false,
 ): Promise<null | Reply> {
   await readMap(line, iterator);
-  return await readReply(iterator);
+  return await readReply(iterator, raw);
 }
 
 function readBigNumber(line: Uint8Array): BigInt {
@@ -156,10 +185,13 @@ function readBoolean(line: Uint8Array): boolean {
 async function readBulkString(
   line: Uint8Array,
   iterator: AsyncIterableIterator<Uint8Array>,
+  raw = false,
 ): Promise<string | null> {
-  return readNumber(line) === -1
-    ? null
-    : decoder.decode((await iterator.next()).value!);
+  if (readNumber(line) === -1) {
+    return null;
+  }
+  const { value } = await iterator.next();
+  return raw ? value : decoder.decode(value);
 }
 
 async function readError(line: Uint8Array): Promise<never> {
@@ -237,6 +269,7 @@ async function readStreamedString(
  */
 export async function readReply(
   iterator: AsyncIterableIterator<Uint8Array>,
+  raw = false,
 ): Promise<Reply> {
   const { value } = await iterator.next();
   if (value.length === 0) {
@@ -260,7 +293,7 @@ export async function readReply(
     case VERBATIM_STRING_PREFIX:
       return isSteamedReply(value)
         ? await readStreamedString(iterator)
-        : await readBulkString(value, iterator);
+        : await readBulkString(value, iterator, raw);
     case DOUBLE_PREFIX:
     case INTEGER_PREFIX:
       return readNumber(value);
@@ -305,9 +338,10 @@ export async function readReply(
 export async function sendCommand(
   redisConn: Deno.Conn,
   command: Command,
+  raw = false,
 ): Promise<Reply> {
   await writeCommand(redisConn, command);
-  return await readReply(readDelim(redisConn, encoder.encode(CRLF)));
+  return await readReply(readDelim(redisConn, encoder.encode(CRLF)), raw);
 }
 
 /**
@@ -332,8 +366,11 @@ export async function pipelineCommands(
   redisConn: Deno.Conn,
   commands: Command[],
 ): Promise<Reply[]> {
-  const string = commands.map(createCommandString).join("");
-  await writeAll(redisConn, encoder.encode(string));
+  const requests = new BytesList();
+  commands
+    .map(createRequest)
+    .forEach((request) => requests.add(request));
+  await writeAll(redisConn, requests.concat());
   return readNReplies(
     commands.length,
     readDelim(redisConn, encoder.encode(CRLF)),
@@ -380,9 +417,10 @@ export const listenReplies = readReplies;
  */
 export async function* readReplies(
   redisConn: Deno.Conn,
+  raw = false,
 ): AsyncIterableIterator<Reply> {
   const iterator = readDelim(redisConn, encoder.encode(CRLF));
   while (true) {
-    yield await readReply(iterator);
+    yield await readReply(iterator, raw);
   }
 }

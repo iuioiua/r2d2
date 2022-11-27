@@ -239,6 +239,9 @@ export async function readReply(
   iterator: AsyncIterableIterator<Uint8Array>,
 ): Promise<Reply> {
   const { value } = await iterator.next();
+  if (value.length === 0) {
+    return await Promise.reject("No reply received");
+  }
   switch (value[0]) {
     case ARRAY_PREFIX:
     case PUSH_PREFIX:

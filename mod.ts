@@ -62,11 +62,10 @@ function createRawRequest(command: Command): Uint8Array {
 }
 
 function createStringRequest(command: (string | number)[]): Uint8Array {
-  let string = String.fromCharCode(ARRAY_PREFIX) + command.length + CRLF;
+  let string = ARRAY_PREFIX_STRING + command.length + CRLF;
   for (const arg of command) {
-    string += String.fromCharCode(BULK_STRING_PREFIX) + arg.toString().length +
-      CRLF +
-      arg + CRLF;
+    string += BULK_STRING_PREFIX_STRING + arg.toString().length + CRLF;
+    string += arg + CRLF;
   }
   return encoder.encode(string);
 }

@@ -260,7 +260,12 @@ Deno.test("RESP3", async () => {
   });
 });
 
-addEventListener("unload", async () => {
-  await sendCommand(redisConn, ["SHUTDOWN"]);
-  redisConn.close();
+Deno.test("no reply", async () => {
+  await assertRejects(
+    async () => await sendCommand(redisConn, ["SHUTDOWN"]),
+    TypeError,
+    "No reply received",
+  );
 });
+
+addEventListener("unload", () => redisConn.close());

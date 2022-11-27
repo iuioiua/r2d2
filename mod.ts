@@ -1,6 +1,4 @@
 // deno-lint-ignore-file no-explicit-any
-import { writeAll } from "https://deno.land/std@0.166.0/streams/conversion.ts";
-import { readDelim } from "https://deno.land/std@0.166.0/io/buffer.ts";
 import { chunk } from "https://deno.land/std@0.166.0/collections/chunk.ts";
 import { BytesList } from "https://deno.land/std@0.166.0/bytes/bytes_list.ts";
 
@@ -19,6 +17,7 @@ export type Reply =
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const CRLF = "\r\n";
+const CRLF_RAW = encoder.encode(CRLF);
 
 const ARRAY_PREFIX_STRING = "*";
 const BULK_STRING_PREFIX_STRING = "$";
@@ -44,6 +43,14 @@ const STREAMED_STRING_END_DELIMITER = ";0";
 const STREAMED_AGGREGATE_END_DELIMITER = ".";
 
 /** 1. Request */
+
+/** Copied from `https://deno.land/std@0.166.0/streams/conversion.ts` to avoid extrenous imports and maintenance. */
+async function writeAll(writer: Deno.Writer, bytes: Uint8Array) {
+  let bytesWritten = 0;
+  while (bytesWritten < bytes.byteLength) {
+    bytesWritten += await writer.write(bytes.subarray(bytesWritten));
+  }
+}
 
 function createRawRequest(command: Command): Uint8Array {
   const lines = new BytesList();
@@ -101,6 +108,49 @@ export async function writeCommand(
 }
 
 /** 2. Reply */
+
+/** Copied, then modified from `https://deno.land/std@0.166.0/io/buffer.ts` to reduce extreneous code, uneeded functionality and maintenance. */
+export async function* readLines(
+  reader: Deno.Reader,
+): AsyncIterableIterator<Uint8Array> {
+  // Avoid unicode problems
+  const chunks = new BytesList();
+  const bufSize = 1024;
+
+  // Modified KMP
+  let inspectIndex = 0;
+  let matchIndex = 0;
+  while (true) {
+    const inspectArr = new Uint8Array(bufSize);
+    const result = await reader.read(inspectArr);
+    if (result === null) {
+      // Yield last chunk.
+      yield chunks.concat();
+      return;
+    }
+    chunks.add(inspectArr, 0, result);
+    let localIndex = 0;
+    while (inspectIndex < chunks.size()) {
+      if (inspectArr[localIndex] === CRLF_RAW[matchIndex]) {
+        inspectIndex++;
+        localIndex++;
+        matchIndex++;
+        if (matchIndex === CRLF_RAW.length) {
+          // Full match
+          const readyBytes = chunks.slice(0, inspectIndex - CRLF_RAW.length);
+          yield readyBytes;
+          // Reset match, different from KMP.
+          chunks.shift(inspectIndex);
+          inspectIndex = 0;
+          matchIndex = 0;
+        }
+      } else {
+        inspectIndex++;
+        localIndex++;
+      }
+    }
+  }
+}
 
 function removePrefix(line: Uint8Array): string {
   return decoder.decode(line.slice(1));
@@ -340,7 +390,7 @@ export async function sendCommand(
   raw = false,
 ): Promise<Reply> {
   await writeCommand(redisConn, command);
-  return await readReply(readDelim(redisConn, encoder.encode(CRLF)), raw);
+  return await readReply(readLines(redisConn), raw);
 }
 
 /**
@@ -370,10 +420,7 @@ export async function pipelineCommands(
     .map(createRequest)
     .forEach((request) => requests.add(request));
   await writeAll(redisConn, requests.concat());
-  return readNReplies(
-    commands.length,
-    readDelim(redisConn, encoder.encode(CRLF)),
-  );
+  return readNReplies(commands.length, readLines(redisConn));
 }
 
 /**
@@ -397,7 +444,7 @@ export async function* readReplies(
   redisConn: Deno.Conn,
   raw = false,
 ): AsyncIterableIterator<Reply> {
-  const iterator = readDelim(redisConn, encoder.encode(CRLF));
+  const iterator = readLines(redisConn);
   while (true) {
     yield await readReply(iterator, raw);
   }

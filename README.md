@@ -9,8 +9,8 @@ Fast, lightweight and simple Redis client library for
 
 ## Features
 
-- Supports [RESPv2](#respv2), [RESP3](#resp3), [pipelining](#pipelining),
-  [pub/sub](#pubsub), [transactions](#transactions),
+- Supports [RESPv2](#respv2), [RESP3](#resp3), [raw data](#raw-data),
+  [pipelining](#pipelining), [pub/sub](#pubsub), [transactions](#transactions),
   [eval scripts](#eval-script) and [Lua scripts](#lua-script).
 - The fastest Redis client in Deno. [See below](#benchmarks) and
   [try benchmarking yourself](#contributing)!
@@ -62,6 +62,25 @@ await sendCommand(redisConn, ["HSET", "hash3", "foo", 1, "bar", 2]);
 
 // Returns { foo: "1", bar: "2" }
 await sendCommand(redisConn, ["HGETALL", "hash3"]);
+```
+
+### Raw data
+
+Set the last argument, `raw` to `true` and bulk string replies will return raw
+data instead of strings.
+
+```ts
+import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+
+const redisConn = await Deno.connect({ port: 6379 });
+
+const data = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+// Returns "OK"
+await sendCommand(redisConn, ["SET", "binary", data]);
+
+// Returns same value as `data` variable
+await sendCommand(redisConn, ["GET", "binary"], true);
 ```
 
 ### Pipelining

@@ -66,7 +66,7 @@ await sendCommand(redisConn, ["HGETALL", "hash3"]);
 
 ### Raw data
 
-Set the last argument, `raw` to `true` and bulk string replies will return raw
+Set the last argument, `raw`, to `true` and bulk string replies will return raw
 data instead of strings.
 
 ```ts
@@ -133,7 +133,7 @@ await sendCommand(redisConn, ["INCR", "FOO"]);
 await sendCommand(redisConn, ["EXEC"]);
 ```
 
-### Eval Script
+### Eval Scripts
 
 ```ts
 import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
@@ -144,7 +144,7 @@ const redisConn = await Deno.connect({ port: 6379 });
 await sendCommand(redisConn, ["EVAL", "return ARGV[1]", 0, "hello"]);
 ```
 
-### Lua Script
+### Lua Scripts
 
 ```ts
 import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
@@ -162,7 +162,7 @@ await sendCommand(redisConn, [
 await sendCommand(redisConn, ["FCALL", "knockknock", 0]);
 ```
 
-### Timeout
+### Timeouts
 
 ```ts
 import { deadline } from "https://deno.land/std/async/mod.ts";

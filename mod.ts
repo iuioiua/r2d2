@@ -110,7 +110,7 @@ export async function writeCommand(
 /** 2. Reply */
 
 /** Copied, then modified from `https://deno.land/std@0.166.0/io/buffer.ts` to reduce extreneous code, uneeded functionality and maintenance. */
-export async function* readLines(
+async function* readLines(
   reader: Deno.Reader,
 ): AsyncIterableIterator<Uint8Array> {
   // Avoid unicode problems
@@ -129,6 +129,7 @@ export async function* readLines(
     chunks.add(inspectArr, 0, result);
     let localIndex = 0;
     while (inspectIndex < chunks.size()) {
+      console.log({ localIndex, inspectIndex, matchIndex });
       if (inspectArr[localIndex] === CRLF_RAW[matchIndex]) {
         inspectIndex++;
         localIndex++;

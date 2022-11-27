@@ -1,10 +1,10 @@
 import {
   assertEquals,
   assertRejects,
-} from "https://deno.land/std@0.164.0/testing/asserts.ts";
-import { StringReader } from "https://deno.land/std@0.164.0/io/readers.ts";
-import { StringWriter } from "https://deno.land/std@0.164.0/io/writers.ts";
-import { readDelim } from "https://deno.land/std@0.164.0/io/buffer.ts";
+} from "https://deno.land/std@0.166.0/testing/asserts.ts";
+import { StringReader } from "https://deno.land/std@0.166.0/io/readers.ts";
+import { StringWriter } from "https://deno.land/std@0.166.0/io/writers.ts";
+import { readDelim } from "https://deno.land/std@0.166.0/io/buffer.ts";
 
 import {
   type Command,

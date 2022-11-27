@@ -52,15 +52,3 @@ export async function* readDelim(
     }
   }
 }
-
-/** Read delimited strings from a Reader. */
-export async function* readStringDelim(
-  reader: Deno.Reader,
-  delim: string,
-): AsyncIterableIterator<string> {
-  const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
-  for await (const chunk of readDelim(reader, encoder.encode(delim))) {
-    yield decoder.decode(chunk);
-  }
-}

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { chunk } from "https://deno.land/std@0.164.0/collections/chunk.ts";
 
-import { readStringDelim, writeAll } from "./vendor.ts";
+import { readDelim, writeAll } from "./vendor.ts";
 
 /** Redis command */
 export type Command = (string | number)[];

@@ -129,7 +129,6 @@ async function* readLines(
     chunks.add(inspectArr, 0, result);
     let localIndex = 0;
     while (inspectIndex < chunks.size()) {
-      console.log({ localIndex, inspectIndex, matchIndex });
       if (inspectArr[localIndex] === CRLF_RAW[matchIndex]) {
         inspectIndex++;
         localIndex++;

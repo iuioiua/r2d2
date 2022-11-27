@@ -124,7 +124,6 @@ export async function* readLines(
     const inspectArr = new Uint8Array(bufSize);
     const result = await reader.read(inspectArr);
     if (result === null) {
-      // Yield last chunk.
       yield chunks.concat();
       return;
     }

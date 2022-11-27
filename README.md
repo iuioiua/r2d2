@@ -189,7 +189,7 @@ Before submitting a pull request, please run:
 
 ## Comparison
 
-Data recorded on November 15, 2022.
+Data recorded on November 28, 2022.
 
 ### Benchmarks
 

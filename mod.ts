@@ -125,9 +125,8 @@ export async function* readLines(
     const result = await reader.read(inspectArr);
     if (result === null) {
       yield chunks.concat();
-      return;
     }
-    chunks.add(inspectArr, 0, result);
+    chunks.add(inspectArr, 0, result!);
     let localIndex = 0;
     while (inspectIndex < chunks.size()) {
       if (inspectArr[localIndex] === CRLF_RAW[matchIndex]) {

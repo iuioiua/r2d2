@@ -199,16 +199,16 @@ runtime: deno 1.28.2 (aarch64-apple-darwin)
 
 benchmark        time (avg)             (min … max)       p75       p99      p995
 --------------------------------------------------- -----------------------------
-r2d2         173.32 µs/iter    (143.42 µs … 6.4 ms) 173.62 µs 326.04 µs 355.67 µs
-deno-redis    238.4 µs/iter   (190.46 µs … 6.05 ms) 235.92 µs 436.75 µs 634.58 µs
-npm:ioredis  350.98 µs/iter   (206.71 µs … 4.17 ms) 262.25 µs   3.29 ms   3.65 ms
-npm:redis       518 µs/iter   (302.21 µs … 4.33 ms) 379.25 µs   3.33 ms   3.65 ms
+r2d2         170.47 µs/iter   (107.92 µs … 6.07 ms) 173.17 µs 318.12 µs 367.29 µs
+deno-redis   240.34 µs/iter   (185.54 µs … 6.59 ms) 237.92 µs 467.83 µs 664.17 µs
+npm:ioredis  350.36 µs/iter   (204.17 µs … 3.89 ms) 263.46 µs    3.2 ms   3.39 ms
+npm:redis    495.44 µs/iter    (304.83 µs … 4.1 ms) 372.17 µs   3.34 ms   3.65 ms
 
 summary
   r2d2
-   1.38x faster than deno-redis
-   2.03x faster than npm:ioredis
-   2.99x faster than npm:redis
+   1.41x faster than deno-redis
+   2.06x faster than npm:ioredis
+   2.91x faster than npm:redis
 ```
 
 > Node: Results were produced using `deno task redis:start && deno task bench`.
@@ -217,7 +217,7 @@ summary
 
 | Module      | Size (KB) | Dependencies |
 | ----------- | --------- | ------------ |
-| r2d2        | 77.94     | 8            |
+| r2d2        | 17.24     | 2            |
 | deno-redis  | 187.76    | 25           |
 | npm:ioredis | 890.96    | 10           |
 | npm:redis   | 891.60    | 9            |

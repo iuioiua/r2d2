@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { chunk } from "https://deno.land/std@0.166.0/collections/chunk.ts";
-import { BytesList } from "https://deno.land/std@0.166.0/bytes/bytes_list.ts";
+import { chunk } from "https://deno.land/std@0.167.0/collections/chunk.ts";
+import { BytesList } from "https://deno.land/std@0.167.0/bytes/bytes_list.ts";
+import { writeAll } from "https://deno.land/std@0.167.0/streams/write_all.ts";
 
 /** Redis command */
 export type Command = (string | number | Uint8Array)[];
@@ -43,14 +44,6 @@ const STREAMED_STRING_END_DELIMITER = ";0";
 const STREAMED_AGGREGATE_END_DELIMITER = ".";
 
 /** 1. Request */
-
-/** Copied from `https://deno.land/std@0.166.0/streams/conversion.ts` to avoid extrenous imports and maintenance. */
-async function writeAll(writer: Deno.Writer, bytes: Uint8Array) {
-  let bytesWritten = 0;
-  while (bytesWritten < bytes.byteLength) {
-    bytesWritten += await writer.write(bytes.subarray(bytesWritten));
-  }
-}
 
 function createRawRequest(command: Command): Uint8Array {
   const lines = new BytesList();
@@ -109,13 +102,13 @@ export async function writeCommand(
 
 /** 2. Reply */
 
-/** Copied, then modified from `https://deno.land/std@0.166.0/io/buffer.ts` to reduce extreneous code, uneeded functionality and maintenance. */
+/** Copied, then modified from `https://deno.land/std@0.167.0/io/buffer.ts` to reduce extreneous code, uneeded functionality and maintenance. */
 async function* readLines(
   reader: Deno.Reader,
 ): AsyncIterableIterator<Uint8Array> {
   // Avoid unicode problems
   const chunks = new BytesList();
-  const bufSize = 1024;
+  const bufSize = 1_024;
 
   // Modified KMP
   let inspectIndex = 0;
@@ -125,6 +118,9 @@ async function* readLines(
     const result = await reader.read(inspectArr);
     if (result === null) {
       return chunks.concat();
+    }
+    if (inspectArr.byteLength < bufSize) {
+      return inspectArr.slice(0, result);
     }
     chunks.add(inspectArr, 0, result);
     let localIndex = 0;

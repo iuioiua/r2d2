@@ -12,6 +12,7 @@ Fast, lightweight and simple Redis client library for
 - Supports [RESPv2](#respv2), [RESP3](#resp3), [raw data](#raw-data),
   [pipelining](#pipelining), [pub/sub](#pubsub), [transactions](#transactions),
   [eval scripts](#eval-script) and [Lua scripts](#lua-script).
+- Compatible with [timeouts](#timeouts) and [retries](#retries).
 - The fastest Redis client in Deno. [See below](#benchmarks) and
   [try benchmarking yourself](#contributing)!
 - Written to be easily understood and debugged.
@@ -164,8 +165,11 @@ await sendCommand(redisConn, ["FCALL", "knockknock", 0]);
 
 ### Timeouts
 
+For further details on `deadline()`, see the documentation
+[here](https://deno.land/std/async/deadline.ts?s=deadline).
+
 ```ts
-import { deadline } from "https://deno.land/std/async/mod.ts";
+import { deadline } from "https://deno.land/std/async/deadline.ts";
 import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
 
 const redisConn = await Deno.connect({ port: 6379 });
@@ -173,6 +177,23 @@ const redisConn = await Deno.connect({ port: 6379 });
 // Rejects if the command takes longer than 100 ms
 await deadline(sendCommand(redisConn, ["SLOWLOG", "GET"]), 100);
 ```
+
+Note: this was added in v0.101.0 of the Deno Standard Library.
+
+### Retries
+
+For further details on `retry()`, see the documentation
+[here](https://deno.land/std/async/retry.ts?s=retry).
+
+```ts
+import { retry } from "https://deno.land/std/async/retry.ts";
+import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+
+// Retries to connect until successful using the exponential backoff algorithm.
+const redisConn = await retry(async () => await Deno.connect({ port: 6379 }));
+```
+
+Note: this was added in v0.167.0 of the Deno Standard Library.
 
 ## Contributing
 

@@ -119,9 +119,6 @@ async function* readLines(
     if (result === null) {
       return chunks.concat();
     }
-    if (inspectArr.byteLength < bufSize) {
-      return inspectArr.slice(0, result);
-    }
     chunks.add(inspectArr, 0, result);
     let localIndex = 0;
     while (inspectIndex < chunks.size()) {

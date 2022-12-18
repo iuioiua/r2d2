@@ -23,8 +23,6 @@ jobs:
 
       - name: Setup Deno
         uses: denoland/setup-deno@v1
-        with:
-          deno-version: vx.x.x
 
       - name: Verify formatting
         run: deno fmt --check

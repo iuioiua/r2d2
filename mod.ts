@@ -1,7 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { chunk } from "https://deno.land/std@0.167.0/collections/chunk.ts";
-import { BytesList } from "https://deno.land/std@0.167.0/bytes/bytes_list.ts";
-import { writeAll } from "https://deno.land/std@0.167.0/streams/write_all.ts";
+import { chunk } from "https://deno.land/std@0.168.0/collections/chunk.ts";
+import { BytesList } from "https://deno.land/std@0.168.0/bytes/bytes_list.ts";
+import { writeAll } from "https://deno.land/std@0.168.0/streams/write_all.ts";
+import { readDelim } from "https://deno.land/std@0.168.0/io/read_delim.ts";
 
 /** Redis command */
 export type Command = (string | number | Uint8Array)[];
@@ -101,47 +102,6 @@ export async function writeCommand(
 }
 
 /** 2. Reply */
-
-/** Copied, then modified from `https://deno.land/std@0.167.0/io/buffer.ts` to reduce extreneous code, uneeded functionality and maintenance. */
-async function* readLines(
-  reader: Deno.Reader,
-): AsyncIterableIterator<Uint8Array> {
-  // Avoid unicode problems
-  const chunks = new BytesList();
-  const bufSize = 1_024;
-
-  // Modified KMP
-  let inspectIndex = 0;
-  let matchIndex = 0;
-  while (true) {
-    const inspectArr = new Uint8Array(bufSize);
-    const result = await reader.read(inspectArr);
-    if (result === null) {
-      return chunks.concat();
-    }
-    chunks.add(inspectArr, 0, result);
-    let localIndex = 0;
-    while (inspectIndex < chunks.size()) {
-      if (inspectArr[localIndex] === CRLF_RAW[matchIndex]) {
-        inspectIndex++;
-        localIndex++;
-        matchIndex++;
-        if (matchIndex === CRLF_RAW.length) {
-          // Full match
-          const readyBytes = chunks.slice(0, inspectIndex - CRLF_RAW.length);
-          yield readyBytes;
-          // Reset match, different from KMP.
-          chunks.shift(inspectIndex);
-          inspectIndex = 0;
-          matchIndex = 0;
-        }
-      } else {
-        inspectIndex++;
-        localIndex++;
-      }
-    }
-  }
-}
 
 function removePrefix(line: Uint8Array): string {
   return decoder.decode(line.slice(1));
@@ -381,7 +341,7 @@ export async function sendCommand(
   raw = false,
 ): Promise<Reply> {
   await writeCommand(redisConn, command);
-  return await readReply(readLines(redisConn), raw);
+  return await readReply(readDelim(redisConn, CRLF_RAW), raw);
 }
 
 /**
@@ -411,7 +371,7 @@ export async function pipelineCommands(
     .map(createRequest)
     .forEach((request) => requests.add(request));
   await writeAll(redisConn, requests.concat());
-  return readNReplies(commands.length, readLines(redisConn));
+  return readNReplies(commands.length, readDelim(redisConn, CRLF_RAW));
 }
 
 /**
@@ -435,7 +395,7 @@ export async function* readReplies(
   redisConn: Deno.Conn,
   raw = false,
 ): AsyncIterableIterator<Reply> {
-  const iterator = readLines(redisConn);
+  const iterator = readDelim(redisConn, CRLF_RAW);
   while (true) {
     yield await readReply(iterator, raw);
   }

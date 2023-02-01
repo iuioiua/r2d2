@@ -1,6 +1,6 @@
-import { connect } from "https://deno.land/x/redis@v0.27.4/mod.ts";
-import { Redis } from "npm:ioredis@5.2.5";
-import nodeRedis from "npm:redis@4.5.1";
+import { connect } from "https://deno.land/x/redis@v0.29.0/mod.ts";
+import { Redis } from "npm:ioredis@5.3.0";
+import nodeRedis from "npm:redis@4.6.4";
 
 import { pipelineCommands, sendCommand } from "./mod.ts";
 

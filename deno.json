@@ -1,5 +1,7 @@
 {
-  "importMap": "import_map.json",
+  "imports": {
+    "https://deno.land/x/r2d2@$VERSION/": "./"
+  },
   "tasks": {
     "redis:start": "rm -f dump.rdb && redis-server --daemonize yes",
     "test": "deno test --allow-net --trace-ops --coverage=cov --doc --parallel",

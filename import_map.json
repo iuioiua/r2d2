@@ -1,5 +1,0 @@
-{
-  "imports": {
-    "https://deno.land/x/r2d2@$VERSION/": "./"
-  }
-}

@@ -178,7 +178,7 @@ const redisConn = await Deno.connect({ port: 6379 });
 await deadline(sendCommand(redisConn, ["SLOWLOG", "GET"]), 100);
 ```
 
-Note: this was added in v0.101.0 of the Deno Standard Library.
+> Note: this was added in v0.101.0 of the Deno Standard Library.
 
 ### Retries
 
@@ -193,7 +193,7 @@ import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
 const redisConn = await retry(async () => await Deno.connect({ port: 6379 }));
 ```
 
-Note: this was added in v0.167.0 of the Deno Standard Library.
+> Note: this was added in v0.167.0 of the Deno Standard Library.
 
 ## Contributing
 
@@ -231,7 +231,7 @@ summary
    2.91x faster than npm:redis
 ```
 
-> Node: Results were produced using `deno task bench:dev`.
+> Note: Results were produced using `deno task bench:dev`.
 
 ### Size
 

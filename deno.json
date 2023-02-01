@@ -3,7 +3,9 @@
   "tasks": {
     "redis:start": "rm -f dump.rdb && redis-server --daemonize yes",
     "test": "deno test --allow-net --trace-ops --coverage=cov --doc --parallel",
+    "test:dev": "deno task redis:start && deno task test",
     "bench": "deno bench --allow-net --allow-env",
+    "bench:dev": "deno task redis:start && deno task bench",
     "coverage": "deno coverage cov --exclude='test.ts' --lcov --output=cov.lcov"
   },
   "fmt": {

@@ -12,7 +12,7 @@ export type Reply =
   | number
   | null
   | boolean
-  | BigInt
+  | bigint
   | Record<string, any>
   | Reply[];
 
@@ -165,7 +165,7 @@ async function readAttribute(
   return await readReply(iterator, raw);
 }
 
-function readBigNumber(line: Uint8Array): BigInt {
+function readBigNumber(line: Uint8Array): bigint {
   return BigInt(removePrefix(line));
 }
 

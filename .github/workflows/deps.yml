@@ -2,7 +2,7 @@ name: Denopendabot
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * *" # modify to your convenient time
+    - cron: "0 0 * * *"
 jobs:
   update:
     name: Update dependencies
@@ -10,5 +10,4 @@ jobs:
     steps:
       - uses: hasundue/denopendabot@0.14.1
         with:
-          user-token: ${{ secrets.GH_TOKEN }} # needed for updating workflows
-          exclude: bench.ts
+          user-token: ${{ secrets.GH_TOKEN }}

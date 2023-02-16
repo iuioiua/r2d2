@@ -11,3 +11,4 @@ jobs:
       - uses: hasundue/denopendabot@0.14.1
         with:
           user-token: ${{ secrets.GH_TOKEN }} # needed for updating workflows
+          exclude: bench.ts

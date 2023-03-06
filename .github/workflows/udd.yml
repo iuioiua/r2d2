@@ -24,7 +24,7 @@ jobs:
         uses: denoland/setup-deno@v1
       
       - name: Update dependencies
-        run: deno run -A https://deno.land/x/udd/main.ts --test "deno task test:dev" mod.ts
+        run: deno run -A https://deno.land/x/udd/main.ts --test "deno task test" mod.ts
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v4

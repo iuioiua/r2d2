@@ -24,11 +24,42 @@ jobs:
         uses: denoland/setup-deno@v1
       
       - name: Update dependencies
-        run: deno run -A https://deno.land/x/udd/main.ts --test "deno task test" mod.ts
+        run: deno run -A https://deno.land/x/udd/main.ts mod.ts
 
-      - name: Create pull request
+      - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
+        id: pr
         with:
-          title: "chore(deps): update dependencies"
-          commit-message: "chore(deps): Update dependencies"
+          commit-message: "Update dependencies"
+          title: Update dependencies
+          body: >
+            Dependencies updated by [udd](https://github.com/hayd/deno-udd).
+          branch: deno-dependency-updates
+          author: GitHub <noreply@github.com>
           delete-branch: true
+    
+      - name: Retrieve commit sha
+        id: commit
+        run: echo "::set-output name=sha::$(git rev-parse HEAD)"
+
+      - name: Set commit status with pending
+        uses: Sibz/github-status-action@v1
+        with:
+          authToken: ${{ secrets.GITHUB_TOKEN }}
+          context: "Basic tests"
+          state: "pending"
+          sha: ${{ steps.commit.outputs.sha }}
+
+      - name: Run tests
+        id: test
+        continue-on-error: true
+        run: deno task test
+
+      - name: Set commit status with outcome
+        uses: Sibz/github-status-action@v1
+        with:
+          authToken: ${{ secrets.GITHUB_TOKEN }}
+          context: "Basic tests"
+          description: "To run other CI actions close/reopen this PR"
+          state: ${{ steps.test.outcome }}
+          sha: ${{ steps.commit.outputs.sha }}

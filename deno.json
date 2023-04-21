@@ -8,7 +8,8 @@
     "test:dev": "deno task redis:start && deno task test",
     "bench": "deno bench --allow-net --allow-env",
     "bench:dev": "deno task redis:start && deno task bench",
-    "coverage": "deno coverage cov --exclude='test.ts' --lcov --output=cov.lcov"
+    "coverage": "deno coverage cov --exclude='test.ts' --lcov --output=cov.lcov",
+    "update:dev": "deno run -A https://deno.land/x/udd/main.ts --test=\"deno task test:dev\" mod.ts test.ts"
   },
   "fmt": {
     "files": {

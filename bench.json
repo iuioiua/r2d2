@@ -1,0 +1,86 @@
+{
+  "runtime": "Deno/1.32.5 aarch64-apple-darwin",
+  "cpu": "Apple M2",
+  "benches": [
+    {
+      "origin": "file:///Users/asher/GitHub/r2d2/bench.ts",
+      "group": null,
+      "name": "r2d2",
+      "baseline": true,
+      "results": [
+        {
+          "ok": {
+            "n": 2796,
+            "min": 110958.0,
+            "max": 485750.0,
+            "avg": 179484.0,
+            "p75": 183333.0,
+            "p99": 309333.0,
+            "p995": 343042.0,
+            "p999": 390666.0
+          }
+        }
+      ]
+    },
+    {
+      "origin": "file:///Users/asher/GitHub/r2d2/bench.ts",
+      "group": null,
+      "name": "deno-redis",
+      "baseline": false,
+      "results": [
+        {
+          "ok": {
+            "n": 2095,
+            "min": 192209.0,
+            "max": 4666583.0,
+            "avg": 239831.0,
+            "p75": 239833.0,
+            "p99": 374250.0,
+            "p995": 613541.0,
+            "p999": 687667.0
+          }
+        }
+      ]
+    },
+    {
+      "origin": "file:///Users/asher/GitHub/r2d2/bench.ts",
+      "group": null,
+      "name": "npm:ioredis",
+      "baseline": false,
+      "results": [
+        {
+          "ok": {
+            "n": 1218,
+            "min": 275541.0,
+            "max": 3230083.0,
+            "avg": 413316.0,
+            "p75": 331750.0,
+            "p99": 2574416.0,
+            "p995": 2805291.0,
+            "p999": 3229417.0
+          }
+        }
+      ]
+    },
+    {
+      "origin": "file:///Users/asher/GitHub/r2d2/bench.ts",
+      "group": null,
+      "name": "npm:redis",
+      "baseline": false,
+      "results": [
+        {
+          "ok": {
+            "n": 727,
+            "min": 362417.0,
+            "max": 4682334.0,
+            "avg": 698751.0,
+            "p75": 566000.0,
+            "p99": 3368292.0,
+            "p995": 3912583.0,
+            "p999": 4682334.0
+          }
+        }
+      ]
+    }
+  ]
+}

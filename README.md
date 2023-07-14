@@ -4,8 +4,7 @@
 [![CI](https://github.com/iuioiua/r2d2/actions/workflows/ci.yml/badge.svg)](https://github.com/iuioiua/r2d2/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/iuioiua/r2d2/branch/main/graph/badge.svg?token=8IDAVSL014)](https://codecov.io/gh/iuioiua/r2d2)
 
-Fast, lightweight and simple Redis client library for
-[Deno](https://deno.land/).
+The fastest and simplest Redis client library for [Deno](https://deno.land/).
 
 ## Features
 

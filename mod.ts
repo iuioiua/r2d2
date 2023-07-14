@@ -4,9 +4,7 @@ import { BytesList } from "https://deno.land/std@0.194.0/bytes/bytes_list.ts";
 import { writeAll } from "https://deno.land/std@0.194.0/streams/write_all.ts";
 import { readDelim } from "https://deno.land/std@0.194.0/io/read_delim.ts";
 
-/** Redis command */
 export type Command = (string | number | Uint8Array)[];
-/** Redis reply */
 export type Reply =
   | string
   | number
@@ -44,8 +42,6 @@ const STREAMED_REPLY_START_DELIMITER = "?".charCodeAt(0);
 const STREAMED_STRING_END_DELIMITER = ";0";
 const STREAMED_AGGREGATE_END_DELIMITER = ".";
 
-/** 1. Request */
-
 function createRawRequest(command: Command): Uint8Array {
   const lines = new BytesList();
   lines.add(encoder.encode(ARRAY_PREFIX_STRING + command.length + CRLF));
@@ -74,7 +70,7 @@ function createStringRequest(command: (string | number)[]): Uint8Array {
 /**
  * Transforms a command, which is an array of arguments, into an RESP request.
  *
- * See {@link https://redis.io/docs/reference/protocol-spec/#send-commands-to-a-redis-server}
+ * @see {@link https://redis.io/docs/reference/protocol-spec/#send-commands-to-a-redis-server}
  */
 function createRequest(command: Command): Uint8Array {
   return command.some((arg) => arg instanceof Uint8Array)
@@ -83,9 +79,9 @@ function createRequest(command: Command): Uint8Array {
 }
 
 /**
- * Just writes a command to the Redis server.
+ * Just writes a command to the Redis server without listening for a reply.
  *
- * Example:
+ * @example
  * ```ts
  * import { writeCommand } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *
@@ -100,8 +96,6 @@ export async function writeCommand(
 ): Promise<void> {
   await writeAll(writer, createRequest(command));
 }
-
-/** 2. Reply */
 
 function removePrefix(line: Uint8Array): string {
   return decoder.decode(line.slice(1));
@@ -147,7 +141,7 @@ async function readArray(
   line: Uint8Array,
   iterator: AsyncIterableIterator<Uint8Array>,
 ): Promise<null | Reply[]> {
-  const length = readNumber(line);
+  const length = readNumberOrDouble(line);
   return length === -1 ? null : await readNReplies(length, iterator);
 }
 
@@ -181,13 +175,12 @@ function readBoolean(line: Uint8Array): boolean {
   return removePrefix(line) === "t";
 }
 
-/** Also reads verbatim string */
-async function readBulkString(
+async function readBulkOrVerbatimString(
   line: Uint8Array,
   iterator: AsyncIterableIterator<Uint8Array>,
   raw = false,
 ): Promise<string | null> {
-  if (readNumber(line) === -1) {
+  if (readNumberOrDouble(line) === -1) {
     return null;
   }
   const { value } = await iterator.next();
@@ -202,13 +195,12 @@ async function readMap(
   line: Uint8Array,
   iterator: AsyncIterableIterator<Uint8Array>,
 ): Promise<Record<string, any>> {
-  const length = readNumber(line) * 2;
+  const length = readNumberOrDouble(line) * 2;
   const array = await readNReplies(length, iterator);
   return toObject(array);
 }
 
-/** Reads an integer or double */
-function readNumber(line: Uint8Array): number {
+function readNumberOrDouble(line: Uint8Array): number {
   const number = removePrefix(line);
   switch (number) {
     case "inf":
@@ -265,7 +257,7 @@ async function readStreamedString(
 /**
  * Reads and processes the response line-by-line.
  *
- * See {@link https://redis.io/docs/reference/protocol-spec/#resp-protocol-description}
+ * @see {@link https://github.com/redis/redis-specifications/blob/master/protocol/RESP3.md}
  */
 export async function readReply(
   iterator: AsyncIterableIterator<Uint8Array>,
@@ -293,10 +285,10 @@ export async function readReply(
     case VERBATIM_STRING_PREFIX:
       return isSteamedReply(value)
         ? await readStreamedString(iterator)
-        : await readBulkString(value, iterator, raw);
+        : await readBulkOrVerbatimString(value, iterator, raw);
     case DOUBLE_PREFIX:
     case INTEGER_PREFIX:
-      return readNumber(value);
+      return readNumberOrDouble(value);
     case ERROR_PREFIX:
       return readError(value);
     case MAP_PREFIX:
@@ -317,12 +309,10 @@ export async function readReply(
   }
 }
 
-/** 3. Combined */
-
 /**
  * Sends a command to the Redis server and returns the parsed reply.
  *
- * Example:
+ * @example
  * ```ts
  * import { sendCommand } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *
@@ -347,7 +337,7 @@ export async function sendCommand(
 /**
  * Pipelines commands to the Redis server and returns the parsed replies.
  *
- * Example:
+ * @example
  * ```ts
  * import { pipelineCommands } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *
@@ -377,7 +367,7 @@ export async function pipelineCommands(
 /**
  * Used for pub/sub. Listens for replies from the Redis server.
  *
- * Example:
+ * @example
  * ```ts
  * import { writeCommand, readReplies } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
  *

@@ -24,17 +24,8 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
 
-      - name: Verify formatting
-        run: deno fmt --check
-
-      - name: Run linter
-        run: deno lint
-
-      - name: Run tests
-        run: deno task test
-
-      - name: Generate lcov
-        run: deno task coverage
+      - name: Verify formatting, run linter, run tests and generate lcov
+        run: deno task ok
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3

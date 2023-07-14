@@ -197,19 +197,15 @@ const redisConn = await retry(async () => await Deno.connect({ port: 6379 }));
 
 ## Contributing
 
-Before submitting a pull request, please run:
-
-1. `deno fmt`
-2. `deno lint`
-3. `deno task test:dev` and ensure all tests pass
-4. `deno task bench:dev` and ensure performance hasn't degraded
+Before submitting a pull request, please run `deno task ok:dev`. This task
+checks formatting, runs the linter and runs tests.
 
 > Note: Redis must be installed on your local machine. For installation
 > instructions, see [here](https://redis.io/docs/getting-started/installation/).
 
 ## Comparison
 
-Data recorded on November 28, 2022.
+Data recorded on July 14, 2023.
 
 ### Benchmarks
 
@@ -221,9 +217,9 @@ Data recorded on November 28, 2022.
 
 | Module      | Size (KB) | Dependencies |
 | ----------- | --------- | ------------ |
-| r2d2        | 17.24     | 2            |
-| deno-redis  | 187.76    | 25           |
-| npm:ioredis | 890.96    | 10           |
-| npm:redis   | 891.60    | 9            |
+| r2d2        | 24.46     | 5            |
+| deno-redis  | 169.04    | 25           |
+| npm:ioredis | 894.69    | 10           |
+| npm:redis   | 934.27    | 9            |
 
 > Note: Results were produced using `deno info <module>`

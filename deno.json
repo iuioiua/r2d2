@@ -9,13 +9,11 @@
     "bench": "deno bench --allow-net --allow-env --json > bench.json",
     "bench:dev": "deno task redis:start && deno task bench",
     "coverage": "deno coverage cov --exclude='test.ts' --lcov --output=cov.lcov",
-    "update:dev": "deno run -A https://deno.land/x/udd/main.ts --test=\"deno task test:dev\" mod.ts test.ts"
+    "ok": "deno fmt --check && deno lint && deno task test && deno task coverage",
+    "ok:dev": "deno fmt --check && deno lint && deno task test:dev",
+    "update:dev": "deno run -A https://deno.land/x/udd/main.ts --test=\"deno task test:dev\" mod.ts test.ts bench.ts"
   },
-  "fmt": {
-    "files": {
-      "exclude": [
-        "cov"
-      ]
-    }
-  }
+  "exclude": [
+    "/cov"
+  ]
 }

@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { chunk } from "https://deno.land/std@0.198.0/collections/chunk.ts";
-import { BytesList } from "https://deno.land/std@0.198.0/bytes/bytes_list.ts";
+import { concat } from "https://deno.land/std@0.198.0/bytes/concat.ts";
 import { writeAll } from "https://deno.land/std@0.198.0/streams/write_all.ts";
 import { readDelim } from "https://deno.land/std@0.198.0/io/read_delim.ts";
 
@@ -43,19 +43,19 @@ const STREAMED_STRING_END_DELIMITER = ";0";
 const STREAMED_AGGREGATE_END_DELIMITER = ".";
 
 function createRawRequest(command: Command): Uint8Array {
-  const lines = new BytesList();
-  lines.add(encoder.encode(ARRAY_PREFIX_STRING + command.length + CRLF));
+  const lines = [];
+  lines.push(encoder.encode(ARRAY_PREFIX_STRING + command.length + CRLF));
   for (const arg of command) {
     const bytes = arg instanceof Uint8Array
       ? arg
       : encoder.encode(arg.toString());
-    lines.add(
+    lines.push(
       encoder.encode(BULK_STRING_PREFIX_STRING + bytes.byteLength + CRLF),
     );
-    lines.add(bytes);
-    lines.add(encoder.encode(CRLF));
+    lines.push(bytes);
+    lines.push(encoder.encode(CRLF));
   }
-  return lines.concat();
+  return concat(...lines);
 }
 
 function createStringRequest(command: (string | number)[]): Uint8Array {
@@ -356,11 +356,8 @@ export async function pipelineCommands(
   redisConn: Deno.Conn,
   commands: Command[],
 ): Promise<Reply[]> {
-  const requests = new BytesList();
-  commands
-    .map(createRequest)
-    .forEach((request) => requests.add(request));
-  await writeAll(redisConn, requests.concat());
+  const bytes = commands.map(createRequest);
+  await writeAll(redisConn, concat(...bytes));
   return readNReplies(commands.length, readDelim(redisConn, CRLF_RAW));
 }
 

@@ -1,8 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { chunk } from "https://deno.land/std@0.198.0/collections/chunk.ts";
-import { concat } from "https://deno.land/std@0.198.0/bytes/concat.ts";
-import { writeAll } from "https://deno.land/std@0.198.0/streams/write_all.ts";
-import { readDelim } from "https://deno.land/std@0.198.0/io/read_delim.ts";
+import { chunk } from "https://deno.land/std@0.200.0/collections/chunk.ts";
+import { concat } from "https://deno.land/std@0.200.0/bytes/concat.ts";
+import { writeAll } from "https://deno.land/std@0.200.0/streams/write_all.ts";
+import { readDelim } from "https://deno.land/std@0.200.0/io/read_delim.ts";
 
 export type Command = (string | number | Uint8Array)[];
 export type Reply =

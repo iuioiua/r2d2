@@ -204,7 +204,7 @@ checks formatting, runs the linter and runs tests.
 
 ## Comparison
 
-Data recorded on July 14, 2023.
+Data recorded on August 28, 2023.
 
 ### Benchmarks
 
@@ -216,9 +216,9 @@ Data recorded on July 14, 2023.
 
 | Module      | Size (KB) | Dependencies |
 | ----------- | --------- | ------------ |
-| r2d2        | 24.46     | 5            |
-| deno-redis  | 169.04    | 25           |
+| r2d2        | 24.98     | 6            |
+| deno-redis  | 166.49    | 25           |
 | npm:ioredis | 894.69    | 10           |
-| npm:redis   | 934.27    | 9            |
+| npm:redis   | 937.16    | 9            |
 
 > Note: Results were produced using `deno info <module>`

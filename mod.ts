@@ -42,9 +42,13 @@ const STREAMED_REPLY_START_DELIMITER = "?".charCodeAt(0);
 const STREAMED_STRING_END_DELIMITER = ";0";
 const STREAMED_AGGREGATE_END_DELIMITER = ".";
 
-function createRawRequest(command: Command): Uint8Array {
-  const lines = [];
-  lines.push(encoder.encode(ARRAY_PREFIX_STRING + command.length + CRLF));
+/**
+ * Transforms a command, which is an array of arguments, into an RESP request.
+ *
+ * @see {@link https://redis.io/docs/reference/protocol-spec/#send-commands-to-a-redis-server}
+ */
+function createRequest(command: Command): Uint8Array {
+  const lines = [encoder.encode(ARRAY_PREFIX_STRING + command.length + CRLF)];
   for (const arg of command) {
     const bytes = arg instanceof Uint8Array
       ? arg
@@ -53,29 +57,9 @@ function createRawRequest(command: Command): Uint8Array {
       encoder.encode(BULK_STRING_PREFIX_STRING + bytes.byteLength + CRLF),
     );
     lines.push(bytes);
-    lines.push(encoder.encode(CRLF));
+    lines.push(CRLF_RAW);
   }
   return concat(...lines);
-}
-
-function createStringRequest(command: (string | number)[]): Uint8Array {
-  let string = ARRAY_PREFIX_STRING + command.length + CRLF;
-  for (const arg of command) {
-    string += BULK_STRING_PREFIX_STRING + arg.toString().length + CRLF;
-    string += arg + CRLF;
-  }
-  return encoder.encode(string);
-}
-
-/**
- * Transforms a command, which is an array of arguments, into an RESP request.
- *
- * @see {@link https://redis.io/docs/reference/protocol-spec/#send-commands-to-a-redis-server}
- */
-function createRequest(command: Command): Uint8Array {
-  return command.some((arg) => arg instanceof Uint8Array)
-    ? createRawRequest(command)
-    : createStringRequest(command as (string | number)[]);
 }
 
 /**

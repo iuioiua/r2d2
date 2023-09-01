@@ -204,7 +204,7 @@ checks formatting, runs the linter and runs tests.
 
 ## Comparison
 
-Data recorded on August 28, 2023.
+Data recorded on September 1, 2023.
 
 ### Benchmarks
 

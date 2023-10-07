@@ -386,7 +386,7 @@ class RedisConn {
    * }
    * ```
    */
-  readReplies(raw = false) {
+  readReplies(raw = false): AsyncIterableIterator<Reply> {
     return readReplies(this.#conn, raw);
   }
 
@@ -408,17 +408,28 @@ class RedisConn {
    * ]);
    * ```
    */
-  async pipelineCommands(commands: Command[]) {
+  async pipelineCommands(commands: Command[]): Promise<Reply[]> {
     return await this.#queue.enqueue(async () =>
       await pipelineCommands(this.#conn, commands)
     );
   }
 
+  /** Closes the connection. */
   close() {
     this.#conn.close();
   }
 }
 
+/**
+ * Connects to the Redis server via TCP and resolves to the connection.
+ *
+ * @example
+ * ```ts
+ * import { connect } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
+ *
+ * const redisConn = await connect({ port: 6379 });
+ * ```
+ */
 export async function connect(options: Deno.ConnectOptions) {
   const conn = await Deno.connect(options);
   return new RedisConn(conn);

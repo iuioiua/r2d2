@@ -217,6 +217,38 @@ Deno.test("redisConn.sendCommand() - RESP3", async () => {
   });
 });
 
+Deno.test("race condition", async () => {
+  async function fn() {
+    const key = crypto.randomUUID();
+    const value = crypto.randomUUID();
+    await redisConn.sendCommand(["SET", key, value]);
+    const result = await redisConn.sendCommand(["GET", key]);
+    assertEquals(result, value);
+  }
+
+  await Promise.all([
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+  ]);
+});
+
 Deno.test("redisConn.pipelineCommands()", async () => {
   assertEquals(
     await redisConn.pipelineCommands([

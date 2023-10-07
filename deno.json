@@ -8,8 +8,10 @@
     "test:dev": "deno task redis:start && deno task test",
     "bench": "deno bench --allow-net --allow-env --json > bench.json",
     "bench:dev": "deno task redis:start && deno task bench",
-    "coverage": "deno coverage cov --exclude='test.ts' --lcov --output=cov.lcov",
-    "ok": "deno fmt --check && deno lint && deno task test && deno task coverage",
+    "cov:clean": "rm -rf cov html_cov cov.lcov",
+    "cov:gen": "deno coverage ./cov/ --lcov --output=cov.lcov",
+    "cov:view": "genhtml -o html_cov cov.lcov && open html_cov/index.html",
+    "ok": "deno fmt --check && deno lint && deno task test",
     "ok:dev": "deno fmt --check && deno lint && deno task test:dev",
     "update:dev": "deno run -A https://deno.land/x/udd/main.ts --test=\"deno task test:dev\" mod.ts test.ts bench.ts"
   },

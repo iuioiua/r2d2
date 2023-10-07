@@ -27,5 +27,8 @@ jobs:
       - name: Verify formatting, run linter, run tests and generate lcov
         run: deno task ok
 
+      - name: Create lcov file
+        run: deno task cov:gen
+
       - name: Upload coverage
         uses: codecov/codecov-action@v3

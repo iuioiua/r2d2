@@ -227,11 +227,13 @@ async function readStreamedString(
 }
 
 /**
- * Reads and processes the response line-by-line.
+ * Reads and processes the response line-by-line. Exported for testing.
  *
  * @see {@link https://github.com/redis/redis-specifications/blob/master/protocol/RESP3.md}
+ *
+ * @private
  */
-async function readReply(
+export async function readReply(
   iterator: AsyncIterableIterator<Uint8Array>,
   raw = false,
 ): Promise<Reply> {

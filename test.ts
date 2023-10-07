@@ -3,18 +3,8 @@ import {
   assertRejects,
 } from "https://deno.land/std@0.200.0/assert/mod.ts";
 import { StringReader } from "https://deno.land/std@0.200.0/io/string_reader.ts";
-import { StringWriter } from "https://deno.land/std@0.200.0/io/string_writer.ts";
 import { readDelim } from "https://deno.land/std@0.200.0/io/read_delim.ts";
-import { type Command, connect, type Reply } from "./mod.ts";
-
-/* Deno.test("write command", async () => {
-  const writer = new StringWriter();
-  await writeCommand(writer, ["LLEN", "mylist", 42]);
-  assertEquals(
-    writer.toString(),
-    "*3\r\n$4\r\nLLEN\r\n$6\r\nmylist\r\n$2\r\n42\r\n",
-  );
-});
+import { type Command, connect, readReply, type Reply } from "./mod.ts";
 
 const encoder = new TextEncoder();
 
@@ -37,25 +27,27 @@ async function readReplyRejectTest(output: string, expected: string) {
   );
 }
 
-Deno.test("mixed array", async () =>
+Deno.test("readReply() - mixed array", async () =>
   await readReplyTest("*3\r\n$5\r\nstring\r\n:123\r\n$-1", [
     "string",
     123,
     null,
   ]));
 
-Deno.test("empty array", async () => await readReplyTest("*0\r\n", []));
+Deno.test("readReply() - empty array", async () =>
+  await readReplyTest("*0\r\n", []));
 
-Deno.test("null array", async () => await readReplyTest("*-1\r\n", null));
+Deno.test("readReply() - null array", async () =>
+  await readReplyTest("*-1\r\n", null));
 
-Deno.test("nested array", async () =>
+Deno.test("readReply() - nested array", async () =>
   await readReplyTest("*2\r\n*3\r\n:1\r\n$5\r\nhello\r\n:2\r\n#f\r\n", [[
     1,
     "hello",
     2,
   ], false]));
 
-Deno.test("attribute", async () => {
+Deno.test("readReply() - attribute", async () => {
   await readReplyTest(
     "|1\r\n+key-popularity\r\n%2\r\n$1\r\na\r\n,0.1923\r\n$1\r\nb\r\n,0.0012\r\n*2\r\n:2039123\r\n:9543892\r\n",
     [2039123, 9543892],
@@ -67,85 +59,88 @@ Deno.test("attribute", async () => {
   ]);
 });
 
-Deno.test("positive big number", async () =>
+Deno.test("readReply() - positive big number", async () =>
   await readReplyTest(
     "(3492890328409238509324850943850943825024385\r\n",
     3492890328409238509324850943850943825024385n,
   ));
 
-Deno.test("negative big number", async () =>
+Deno.test("readReply() - negative big number", async () =>
   await readReplyTest(
     "(-3492890328409238509324850943850943825024385\r\n",
     -3492890328409238509324850943850943825024385n,
   ));
 
-Deno.test("true boolean", async () => await readReplyTest("#t\r\n", true));
+Deno.test("readReply() - true boolean", async () =>
+  await readReplyTest("#t\r\n", true));
 
-Deno.test("false boolean", async () => await readReplyTest("#f\r\n", false));
+Deno.test("readReply() - false boolean", async () =>
+  await readReplyTest("#f\r\n", false));
 
-Deno.test("integer", async () => await readReplyTest(":42\r\n", 42));
+Deno.test("readReply() - integer", async () =>
+  await readReplyTest(":42\r\n", 42));
 
-Deno.test("bulk string", async () =>
+Deno.test("readReply() - bulk string", async () =>
   await readReplyTest("$5\r\nhello\r\n", "hello"));
 
-Deno.test("emtpy bulk string", async () =>
+Deno.test("readReply() - emtpy bulk string", async () =>
   await readReplyTest("$0\r\n\r\n", ""));
 
-Deno.test("null bulk string", async () => await readReplyTest("$-1\r\n", null));
+Deno.test("readReply() - null bulk string", async () =>
+  await readReplyTest("$-1\r\n", null));
 
-Deno.test("raw bulk string", async () => {
-  const data = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
-  assertEquals(await sendCommand(redisConn, ["SET", "binary", data]), "OK");
-  assertEquals(await sendCommand(redisConn, ["GET", "binary"], true), data);
+Deno.test("readReply() - raw bulk string", async () => {
 });
 
-Deno.test("blob error", async () => {
+Deno.test("readReply() - blob error", async () => {
   await readReplyRejectTest(
     "!21\r\nSYNTAX invalid syntax\r\n",
     "SYNTAX invalid syntax",
   );
 });
 
-Deno.test("error", async () => {
+Deno.test("readReply() - error", async () => {
   await readReplyRejectTest(
     "-ERR this is the error description\r\n",
     "ERR this is the error description",
   );
 });
 
-Deno.test("double", async () => await readReplyTest(",1.23\r\n", 1.23));
+Deno.test("readReply() - double", async () =>
+  await readReplyTest(",1.23\r\n", 1.23));
 
-Deno.test("positive infinity double", async () =>
+Deno.test("readReply() - positive infinity double", async () =>
   await readReplyTest(",inf\r\n", Infinity));
 
-Deno.test("negative infinity double", async () =>
+Deno.test("readReply() - negative infinity double", async () =>
   await readReplyTest(",-inf\r\n", -Infinity));
 
-Deno.test("map", async () =>
+Deno.test("readReply() - map", async () =>
   await readReplyTest("%2\r\n+first\r\n:1\r\n+second\r\n:2\r\n", {
     first: 1,
     second: 2,
   }));
 
-Deno.test("null", async () => await readReplyTest("_\r\n", null));
+Deno.test("readReply() - null", async () => await readReplyTest("_\r\n", null));
 
-Deno.test("push", async () => {
+Deno.test("readReply() - push", async () => {
   await readReplyTest(
     ">4\r\n+pubsub\r\n+message\r\n+somechannel\r\n+this is the message\r\n",
     ["pubsub", "message", "somechannel", "this is the message"],
   );
 });
 
-Deno.test("set", async () => {
+Deno.test("readReply() - set", async () => {
   await readReplyTest(
     "~5\r\n+orange\r\n+apple\r\n#t\r\n:100\r\n:999\r\n",
     new Set(["orange", "apple", true, 100, 999]),
   );
 });
 
-Deno.test("simple string", async () => await readReplyTest("+OK\r\n", "OK"));
+Deno.test("readReply() - simple string", async () =>
+  await readReplyTest("+OK\r\n", "OK"));
 
-Deno.test("streamed string", async () => {
+Deno.test("readReply() - streamed string", async () => {
   await readReplyTest(
     "$?\r\n;4\r\nHell\r\n;5\r\no wor\r\n;1\r\nd\r\n;0\r\n",
     "Hello word",
@@ -153,34 +148,32 @@ Deno.test("streamed string", async () => {
 });
 
 /** @todo test more complex case */
-/* Deno.test("streamed array", async () => {
+Deno.test("readReply() - streamed array", async () => {
   await readReplyTest("*?\r\n:1\r\n:2\r\n:3\r\n.\r\n", [1, 2, 3]);
 });
 
-Deno.test("streamed set", async () => {
+Deno.test("readReply() - streamed set", async () => {
   await readReplyTest(
     "~?\r\n+a\r\n:1\r\n+b\r\n:2\r\n.\r\n",
     new Set(["a", 1, "b", 2]),
   );
 });
 
-Deno.test("streamed map", async () => {
+Deno.test("readReply() - streamed map", async () => {
   await readReplyTest("%?\r\n+a\r\n:1\r\n+b\r\n:2\r\n.\r\n", { a: 1, b: 2 });
 });
 
-Deno.test("verbatim string", async () => {
+Deno.test("readReply() - verbatim string", async () => {
   await readReplyTest("=15\r\ntxt:Some string\r\n", "txt:Some string");
 });
 
-Deno.test("large reply", async () => {
+Deno.test("readReply() - large reply", async () => {
   const reply = "a".repeat(4096 * 2);
   await readReplyTest(`$${reply.length}\r\n${reply}\r\n`, reply);
-}); */
+});
 
 const PORT = 6379;
 const redisConn = await connect({ port: PORT });
-
-await redisConn.sendCommand(["FLUSHALL"]);
 
 async function sendCommandTest(
   command: Command,
@@ -189,14 +182,42 @@ async function sendCommandTest(
   assertEquals(await redisConn.sendCommand(command), expected);
 }
 
-Deno.test("transactions", async () => {
+Deno.test("redisConn.sendCommand() - transactions", async () => {
   await sendCommandTest(["MULTI"], "OK");
   await sendCommandTest(["INCR", "FOO"], "QUEUED");
   await sendCommandTest(["INCR", "BAR"], "QUEUED");
   await sendCommandTest(["EXEC"], [1, 1]);
 });
 
-Deno.test("pipelining", async () => {
+Deno.test("redisConn.sendCommand() - raw data", async () => {
+  const data = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assertEquals(await redisConn.sendCommand(["SET", "binary", data]), "OK");
+  assertEquals(await redisConn.sendCommand(["GET", "binary"], true), data);
+});
+
+Deno.test("redisConn.sendCommand() - eval script", async () => {
+  await sendCommandTest(["EVAL", "return ARGV[1]", 0, "hello"], "hello");
+});
+
+Deno.test("redisConn.sendCommand() - Lua script", async () => {
+  await sendCommandTest([
+    "FUNCTION",
+    "LOAD",
+    "#!lua name=mylib\nredis.register_function('knockknock', function() return 'Who\\'s there?' end)",
+  ], "mylib");
+  await sendCommandTest(["FCALL", "knockknock", 0], "Who's there?");
+});
+
+Deno.test("redisConn.sendCommand() - RESP3", async () => {
+  await redisConn.sendCommand(["HELLO", 3]);
+  await sendCommandTest(["HSET", "hash3", "foo", 1, "bar", 2], 2);
+  await sendCommandTest(["HGETALL", "hash3"], {
+    foo: "1",
+    bar: "2",
+  });
+});
+
+Deno.test("redisConn.pipelineCommands()", async () => {
   assertEquals(
     await redisConn.pipelineCommands([
       ["INCR", "X"],
@@ -208,7 +229,7 @@ Deno.test("pipelining", async () => {
   );
 });
 
-Deno.test("write-only and listening", async () => {
+Deno.test("redisConn.writeCommand() + redisConn.readReplies()", async () => {
   await redisConn.writeCommand(["SUBSCRIBE", "mychannel"]);
   const iterator = redisConn.readReplies();
   assertEquals(await iterator.next(), {
@@ -222,29 +243,7 @@ Deno.test("write-only and listening", async () => {
   });
 });
 
-Deno.test("eval script", async () => {
-  await sendCommandTest(["EVAL", "return ARGV[1]", 0, "hello"], "hello");
-});
-
-Deno.test("Lua script", async () => {
-  await sendCommandTest([
-    "FUNCTION",
-    "LOAD",
-    "#!lua name=mylib\nredis.register_function('knockknock', function() return 'Who\\'s there?' end)",
-  ], "mylib");
-  await sendCommandTest(["FCALL", "knockknock", 0], "Who's there?");
-});
-
-Deno.test("RESP3", async () => {
-  await redisConn.sendCommand(["HELLO", 3]);
-  await sendCommandTest(["HSET", "hash3", "foo", 1, "bar", 2], 2);
-  await sendCommandTest(["HGETALL", "hash3"], {
-    foo: "1",
-    bar: "2",
-  });
-});
-
-Deno.test("no reply", async () => {
+Deno.test("redisConn.sendCommand() - no reply", async () => {
   await assertRejects(
     async () => await redisConn.sendCommand(["SHUTDOWN"]),
     TypeError,

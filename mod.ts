@@ -62,19 +62,7 @@ function createRequest(command: Command): Uint8Array {
   return concat(...lines);
 }
 
-/**
- * Just writes a command to the Redis server without listening for a reply.
- *
- * @example
- * ```ts
- * import { writeCommand } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
- *
- * const redisConn = await Deno.connect({ port: 6379 });
- *
- * await writeCommand(redisConn, ["SHUTDOWN"]);
- * ```
- */
-export async function writeCommand(
+async function writeCommand(
   writer: Deno.Writer,
   command: Command,
 ): Promise<void> {
@@ -239,9 +227,11 @@ async function readStreamedString(
 }
 
 /**
- * Reads and processes the response line-by-line.
+ * Reads and processes the response line-by-line. Exported for testing.
  *
  * @see {@link https://github.com/redis/redis-specifications/blob/master/protocol/RESP3.md}
+ *
+ * @private
  */
 export async function readReply(
   iterator: AsyncIterableIterator<Uint8Array>,
@@ -293,81 +283,138 @@ export async function readReply(
   }
 }
 
-/**
- * Sends a command to the Redis server and returns the parsed reply.
- *
- * @example
- * ```ts
- * import { sendCommand } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
- *
- * const redisConn = await Deno.connect({ port: 6379 });
- *
- * // Returns "OK"
- * await sendCommand(redisConn, ["SET", "hello", "world"]);
- *
- * // Returns "world"
- * await sendCommand(redisConn, ["GET", "hello"]);
- * ```
- */
-export async function sendCommand(
-  redisConn: Deno.Conn,
+async function sendCommand(
+  redisClient: Deno.Conn,
   command: Command,
   raw = false,
 ): Promise<Reply> {
-  await writeCommand(redisConn, command);
-  return await readReply(readDelim(redisConn, CRLF_RAW), raw);
+  await writeCommand(redisClient, command);
+  return await readReply(readDelim(redisClient, CRLF_RAW), raw);
 }
 
-/**
- * Pipelines commands to the Redis server and returns the parsed replies.
- *
- * @example
- * ```ts
- * import { pipelineCommands } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
- *
- * const redisConn = await Deno.connect({ port: 6379 });
- *
- * // Returns [1, 2, 3, 4]
- * await pipelineCommands(redisConn, [
- *  ["INCR", "X"],
- *  ["INCR", "X"],
- *  ["INCR", "X"],
- *  ["INCR", "X"],
- * ]);
- * ```
- */
-export async function pipelineCommands(
-  redisConn: Deno.Conn,
+async function pipelineCommands(
+  redisClient: Deno.Conn,
   commands: Command[],
 ): Promise<Reply[]> {
   const bytes = commands.map(createRequest);
-  await writeAll(redisConn, concat(...bytes));
-  return readNReplies(commands.length, readDelim(redisConn, CRLF_RAW));
+  await writeAll(redisClient, concat(...bytes));
+  return readNReplies(commands.length, readDelim(redisClient, CRLF_RAW));
 }
 
-/**
- * Used for pub/sub. Listens for replies from the Redis server.
- *
- * @example
- * ```ts
- * import { writeCommand, readReplies } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
- *
- * const redisConn = await Deno.connect({ port: 6379 });
- *
- * await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
- *
- * for await (const reply of readReplies(redisConn)) {
- *   // Prints ["subscribe", "mychannel", 1] first iteration
- *   console.log(reply);
- * }
- * ```
- */
-export async function* readReplies(
-  redisConn: Deno.Conn,
+async function* readReplies(
+  redisClient: Deno.Conn,
   raw = false,
 ): AsyncIterableIterator<Reply> {
-  const iterator = readDelim(redisConn, CRLF_RAW);
+  const iterator = readDelim(redisClient, CRLF_RAW);
   while (true) {
     yield await readReply(iterator, raw);
+  }
+}
+
+class AsyncQueue {
+  #queue: Promise<any> = Promise.resolve();
+
+  async enqueue<T>(task: () => Promise<T>): Promise<T> {
+    this.#queue = this.#queue.then(task);
+    return await this.#queue;
+  }
+}
+
+export class RedisClient {
+  #conn: Deno.TcpConn | Deno.TlsConn;
+  #queue: AsyncQueue;
+
+  constructor(conn: Deno.TcpConn | Deno.TlsConn) {
+    this.#conn = conn;
+    this.#queue = new AsyncQueue();
+  }
+
+  /**
+   * Sends a command to the Redis server and returns the parsed reply.
+   *
+   * @example
+   * ```ts
+   * import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+   *
+   * const redisConn = await Deno.connect({ port: 6379 });
+   * const redisClient = new RedisClient(redisConn);
+   *
+   * // Returns "OK"
+   * await redisClient.sendCommand(["SET", "hello", "world"]);
+   *
+   * // Returns "world"
+   * await redisClient.sendCommand(["GET", "hello"]);
+   * ```
+   */
+  async sendCommand(command: Command, raw = false): Promise<Reply> {
+    return await this.#queue.enqueue(
+      async () => await sendCommand(this.#conn, command, raw),
+    );
+  }
+
+  /**
+   * Just writes a command to the Redis server without listening for a reply.
+   *
+   * @example
+   * ```ts
+   * import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+   *
+   * const redisConn = await Deno.connect({ port: 6379 });
+   * const redisClient = new RedisClient(redisConn);
+   *
+   * await redisClient.writeCommand(["SHUTDOWN"]);
+   * ```
+   */
+  async writeCommand(command: Command) {
+    await this.#queue.enqueue(
+      async () => await writeCommand(this.#conn, command),
+    );
+  }
+
+  /**
+   * Used for pub/sub. Listens for replies from the Redis server.
+   *
+   * @example
+   * ```ts
+   * import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+   *
+   * const redisConn = await Deno.connect({ port: 6379 });
+   * const redisClient = new RedisClient(redisConn);
+   *
+   * await redisClient.writeCommand(["SUBSCRIBE", "mychannel"]);
+   *
+   * for await (const reply of redisClient.readReplies()) {
+   *   // Prints ["subscribe", "mychannel", 1] first iteration
+   *   console.log(reply);
+   * }
+   * ```
+   */
+  readReplies(raw = false): AsyncIterableIterator<Reply> {
+    return readReplies(this.#conn, raw);
+  }
+
+  /**
+   * Pipelines commands to the Redis server and returns the parsed replies.
+   *
+   * @example
+   * ```ts
+   * import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+   *
+   * const redisConn = await Deno.connect({ port: 6379 });
+   * const redisClient = new RedisClient(redisConn);
+   *
+   * // Returns [1, 2, 3, 4]
+   * await redisClient.pipelineCommands([
+   *  ["INCR", "X"],
+   *  ["INCR", "X"],
+   *  ["INCR", "X"],
+   *  ["INCR", "X"],
+   * ]);
+   * ```
+   */
+  async pipelineCommands(commands: Command[]): Promise<Reply[]> {
+    return await this.#queue.enqueue(
+      async () => await pipelineCommands(this.#conn, commands),
+    );
   }
 }

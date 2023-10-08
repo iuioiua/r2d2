@@ -25,43 +25,46 @@ Must be run with `--allow-net` permission. Check out the full documentation
 ### RESPv2
 
 ```ts
-import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
 
 const redisConn = await Deno.connect({ port: 6379 });
+const redisClient = new RedisClient(redisConn);
 
 // Returns "OK"
-await sendCommand(redisConn, ["SET", "hello", "world"]);
+await redisClient.sendCommand(["SET", "hello", "world"]);
 
 // Returns "world"
-await sendCommand(redisConn, ["GET", "hello"]);
+await redisClient.sendCommand(["GET", "hello"]);
 ```
 
 If you don't care about the reply:
 
 ```ts
-import { writeCommand } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
 
 const redisConn = await Deno.connect({ port: 6379 });
+const redisClient = new RedisClient(redisConn);
 
 // Returns nothing
-await writeCommand(redisConn, ["SHUTDOWN"]);
+await redisClient.writeCommand(["SHUTDOWN"]);
 ```
 
 ### RESP3
 
 ```ts
-import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
 
 const redisConn = await Deno.connect({ port: 6379 });
+const redisClient = new RedisClient(redisConn);
 
 // Switch to RESP3 protocol
-await sendCommand(redisConn, ["HELLO", 3]);
+await redisClient.sendCommand(["HELLO", 3]);
 
 // Returns 2
-await sendCommand(redisConn, ["HSET", "hash3", "foo", 1, "bar", 2]);
+await redisClient.sendCommand(["HSET", "hash3", "foo", 1, "bar", 2]);
 
 // Returns { foo: "1", bar: "2" }
-await sendCommand(redisConn, ["HGETALL", "hash3"]);
+await redisClient.sendCommand(["HGETALL", "hash3"]);
 ```
 
 ### Raw data
@@ -70,28 +73,30 @@ Set the last argument, `raw`, to `true` and bulk string replies will return raw
 data instead of strings.
 
 ```ts
-import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
 
 const redisConn = await Deno.connect({ port: 6379 });
+const redisClient = new RedisClient(redisConn);
 
 const data = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
 // Returns "OK"
-await sendCommand(redisConn, ["SET", "binary", data]);
+await redisClient.sendCommand(["SET", "binary", data]);
 
 // Returns same value as `data` variable
-await sendCommand(redisConn, ["GET", "binary"], true);
+await redisClient.sendCommand(["GET", "binary"], true);
 ```
 
 ### Pipelining
 
 ```ts
-import { pipelineCommands } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
 
 const redisConn = await Deno.connect({ port: 6379 });
+const redisClient = new RedisClient(redisConn);
 
 // Returns [1, 2, 3, 4]
-await pipelineCommands(redisConn, [
+await redisClient.pipelineCommands([
   ["INCR", "X"],
   ["INCR", "X"],
   ["INCR", "X"],
@@ -102,12 +107,13 @@ await pipelineCommands(redisConn, [
 ### Pub/Sub
 
 ```ts
-import { readReplies, writeCommand } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
 
 const redisConn = await Deno.connect({ port: 6379 });
+const redisClient = new RedisClient(redisConn);
 
-await writeCommand(redisConn, ["SUBSCRIBE", "mychannel"]);
-for await (const reply of readReplies(redisConn)) {
+await redisClient.writeCommand(["SUBSCRIBE", "mychannel"]);
+for await (const reply of redisClient.readReplies()) {
   // Prints ["subscribe", "mychannel", 1] first iteration
   console.log(reply);
 }
@@ -116,50 +122,53 @@ for await (const reply of readReplies(redisConn)) {
 ### Transactions
 
 ```ts
-import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
 
 const redisConn = await Deno.connect({ port: 6379 });
+const redisClient = new RedisClient(redisConn);
 
 // Returns "OK"
-await sendCommand(redisConn, ["MULTI"]);
+await redisClient.sendCommand(["MULTI"]);
 
 // Returns "QUEUED"
-await sendCommand(redisConn, ["INCR", "FOO"]);
+await redisClient.sendCommand(["INCR", "FOO"]);
 
 // Returns "QUEUED"
-await sendCommand(redisConn, ["INCR", "FOO"]);
+await redisClient.sendCommand(["INCR", "FOO"]);
 
 // Returns [1, 1]
-await sendCommand(redisConn, ["EXEC"]);
+await redisClient.sendCommand(["EXEC"]);
 ```
 
 ### Eval Scripts
 
 ```ts
-import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
 
 const redisConn = await Deno.connect({ port: 6379 });
+const redisClient = new RedisClient(redisConn);
 
 // Returns "hello"
-await sendCommand(redisConn, ["EVAL", "return ARGV[1]", 0, "hello"]);
+await redisClient.sendCommand(["EVAL", "return ARGV[1]", 0, "hello"]);
 ```
 
 ### Lua Scripts
 
 ```ts
-import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
 
 const redisConn = await Deno.connect({ port: 6379 });
+const redisClient = new RedisClient(redisConn);
 
 // Returns "mylib"
-await sendCommand(redisConn, [
+await redisClient.sendCommand([
   "FUNCTION",
   "LOAD",
   "#!lua name=mylib\nredis.register_function('knockknock', function() return 'Who\\'s there?' end)",
 ]);
 
 // Returns "Who's there?"
-await sendCommand(redisConn, ["FCALL", "knockknock", 0]);
+await redisClient.sendCommand(["FCALL", "knockknock", 0]);
 ```
 
 ### Timeouts
@@ -169,12 +178,13 @@ For further details on `deadline()`, see the documentation
 
 ```ts
 import { deadline } from "https://deno.land/std/async/deadline.ts";
-import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
 
 const redisConn = await Deno.connect({ port: 6379 });
+const redisClient = new RedisClient(redisConn);
 
 // Rejects if the command takes longer than 100 ms
-await deadline(sendCommand(redisConn, ["SLOWLOG", "GET"]), 100);
+await deadline(redisClient.sendCommand(["SLOWLOG", "GET"]), 100);
 ```
 
 > Note: this was added in v0.101.0 of the Deno Standard Library.
@@ -186,10 +196,11 @@ For further details on `retry()`, see the documentation
 
 ```ts
 import { retry } from "https://deno.land/std/async/retry.ts";
-import { sendCommand } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
 
 // Retries to connect until successful using the exponential backoff algorithm.
 const redisConn = await retry(async () => await Deno.connect({ port: 6379 }));
+const redisClient = new RedisClient(redisConn);
 ```
 
 > Note: this was added in v0.167.0 of the Deno Standard Library.

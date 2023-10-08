@@ -1,6 +1,6 @@
 {
   "imports": {
-    "https://deno.land/x/r2d2@$VERSION/": "./"
+    "https://deno.land/x/r2d2/": "./"
   },
   "tasks": {
     "redis:start": "redis-server --save \"\" --appendonly no --daemonize yes",

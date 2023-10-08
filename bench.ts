@@ -1,14 +1,17 @@
-import { connect } from "https://deno.land/x/redis@v0.31.0/mod.ts";
+import * as denoRedis from "https://deno.land/x/redis@v0.31.0/mod.ts";
 import { Redis } from "npm:ioredis@5.3.2";
 import nodeRedis from "npm:redis@4.6.8";
 
-import { pipelineCommands, sendCommand } from "./mod.ts";
+import { connect } from "./mod.ts";
 
 const HOSTNAME = "127.0.0.1";
 const PORT = 6379;
 
-const redisConn = await Deno.connect({ hostname: HOSTNAME, port: PORT });
-const denoRedis = await connect({ hostname: HOSTNAME, port: PORT });
+const redisConn = await connect({ hostname: HOSTNAME, port: PORT });
+const denoRedisConn = await denoRedis.connect({
+  hostname: HOSTNAME,
+  port: PORT,
+});
 const ioRedis = new Redis();
 
 const nodeRedisClient = nodeRedis.createClient({ socket: { host: HOSTNAME } });
@@ -18,15 +21,15 @@ Deno.bench({
   name: "r2d2",
   baseline: true,
   async fn() {
-    await sendCommand(redisConn, ["PING"]);
+    await redisConn.sendCommand(["PING"]);
 
-    await sendCommand(redisConn, ["SET", "mykey", "Hello"]);
-    await sendCommand(redisConn, ["GET", "mykey"]);
+    await redisConn.sendCommand(["SET", "mykey", "Hello"]);
+    await redisConn.sendCommand(["GET", "mykey"]);
 
-    await sendCommand(redisConn, ["HSET", "hash", "a", "foo", "b", "bar"]);
-    await sendCommand(redisConn, ["HGETALL", "hash"]);
+    await redisConn.sendCommand(["HSET", "hash", "a", "foo", "b", "bar"]);
+    await redisConn.sendCommand(["HGETALL", "hash"]);
 
-    await pipelineCommands(redisConn, [
+    await redisConn.pipelineCommands([
       ["INCR", "X"],
       ["INCR", "X"],
       ["INCR", "X"],
@@ -38,15 +41,15 @@ Deno.bench({
 Deno.bench({
   name: "deno-redis",
   async fn() {
-    await denoRedis.ping();
+    await denoRedisConn.ping();
 
-    await denoRedis.set("mykey", "Hello");
-    await denoRedis.get("mykey");
+    await denoRedisConn.set("mykey", "Hello");
+    await denoRedisConn.get("mykey");
 
-    await denoRedis.hset("hash", { a: "foo", b: "bar" });
-    await denoRedis.hgetall("hash");
+    await denoRedisConn.hset("hash", { a: "foo", b: "bar" });
+    await denoRedisConn.hgetall("hash");
 
-    const pl = denoRedis.pipeline();
+    const pl = denoRedisConn.pipeline();
     pl.incr("X");
     pl.incr("X");
     pl.incr("X");
@@ -100,6 +103,6 @@ addEventListener("beforeunload", async () => {
 });
 
 addEventListener("unload", () => {
-  denoRedis.close();
+  denoRedisConn.close();
   redisConn.close();
 });

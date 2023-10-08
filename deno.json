@@ -6,7 +6,7 @@
     "redis:start": "redis-server --save \"\" --appendonly no --daemonize yes",
     "test": "deno test --allow-net --trace-ops --coverage=cov --doc --parallel",
     "test:dev": "deno task redis:start && deno task test",
-    "bench": "deno bench --allow-net --allow-env --json > bench.json",
+    "bench": "deno bench --allow-net --allow-env",
     "bench:dev": "deno task redis:start && deno task bench",
     "cov:clean": "rm -rf cov html_cov cov.lcov",
     "cov:gen": "deno coverage ./cov/ --lcov --output=cov.lcov",

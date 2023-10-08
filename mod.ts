@@ -284,28 +284,28 @@ export async function readReply(
 }
 
 async function sendCommand(
-  redisConn: Deno.Conn,
+  redisClient: Deno.Conn,
   command: Command,
   raw = false,
 ): Promise<Reply> {
-  await writeCommand(redisConn, command);
-  return await readReply(readDelim(redisConn, CRLF_RAW), raw);
+  await writeCommand(redisClient, command);
+  return await readReply(readDelim(redisClient, CRLF_RAW), raw);
 }
 
 async function pipelineCommands(
-  redisConn: Deno.Conn,
+  redisClient: Deno.Conn,
   commands: Command[],
 ): Promise<Reply[]> {
   const bytes = commands.map(createRequest);
-  await writeAll(redisConn, concat(...bytes));
-  return readNReplies(commands.length, readDelim(redisConn, CRLF_RAW));
+  await writeAll(redisClient, concat(...bytes));
+  return readNReplies(commands.length, readDelim(redisClient, CRLF_RAW));
 }
 
 async function* readReplies(
-  redisConn: Deno.Conn,
+  redisClient: Deno.Conn,
   raw = false,
 ): AsyncIterableIterator<Reply> {
-  const iterator = readDelim(redisConn, CRLF_RAW);
+  const iterator = readDelim(redisClient, CRLF_RAW);
   while (true) {
     yield await readReply(iterator, raw);
   }
@@ -320,11 +320,11 @@ class AsyncQueue {
   }
 }
 
-class RedisConn {
-  #conn: Deno.TcpConn;
+export class RedisClient {
+  #conn: Deno.TcpConn | Deno.TlsConn;
   #queue: AsyncQueue;
 
-  constructor(conn: Deno.TcpConn) {
+  constructor(conn: Deno.TcpConn | Deno.TlsConn) {
     this.#conn = conn;
     this.#queue = new AsyncQueue();
   }
@@ -334,20 +334,21 @@ class RedisConn {
    *
    * @example
    * ```ts
-   * import { connect } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
+   * import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
    *
-   * const redisConn = await connect({ port: 6379 });
+   * const redisConn = await Deno.connect({ port: 6379 });
+   * const redisClient = new RedisClient(redisConn);
    *
    * // Returns "OK"
-   * await redisConn.sendCommand(["SET", "hello", "world"]);
+   * await redisClient.sendCommand(["SET", "hello", "world"]);
    *
    * // Returns "world"
-   * await redisConn.sendCommand(["GET", "hello"]);
+   * await redisClient.sendCommand(["GET", "hello"]);
    * ```
    */
   async sendCommand(command: Command, raw = false): Promise<Reply> {
-    return await this.#queue.enqueue(async () =>
-      await sendCommand(this.#conn, command, raw)
+    return await this.#queue.enqueue(
+      async () => await sendCommand(this.#conn, command, raw),
     );
   }
 
@@ -356,17 +357,18 @@ class RedisConn {
    *
    * @example
    * ```ts
-   * import { connect } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
+   * import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
    *
-   * const redisConn = await connect({ port: 6379 });
+   * const redisConn = await Deno.connect({ port: 6379 });
+   * const redisClient = new RedisClient(redisConn);
    *
-   * await redisConn.writeCommand(["SHUTDOWN"]);
+   * await redisClient.writeCommand(["SHUTDOWN"]);
    * ```
    */
   async writeCommand(command: Command) {
-    await this.#queue.enqueue(async () => {
-      await writeCommand(this.#conn, command);
-    });
+    await this.#queue.enqueue(
+      async () => await writeCommand(this.#conn, command),
+    );
   }
 
   /**
@@ -374,13 +376,14 @@ class RedisConn {
    *
    * @example
    * ```ts
-   * import { connect } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
+   * import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
    *
-   * const redisConn = await connect({ port: 6379 });
+   * const redisConn = await Deno.connect({ port: 6379 });
+   * const redisClient = new RedisClient(redisConn);
    *
-   * await redisConn.writeCommand(["SUBSCRIBE", "mychannel"]);
+   * await redisClient.writeCommand(["SUBSCRIBE", "mychannel"]);
    *
-   * for await (const reply of redisConn.readReplies()) {
+   * for await (const reply of redisClient.readReplies()) {
    *   // Prints ["subscribe", "mychannel", 1] first iteration
    *   console.log(reply);
    * }
@@ -395,12 +398,13 @@ class RedisConn {
    *
    * @example
    * ```ts
-   * import { connect } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
+   * import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
    *
-   * const redisConn = await connect({ port: 6379 });
+   * const redisConn = await Deno.connect({ port: 6379 });
+   * const redisClient = new RedisClient(redisConn);
    *
    * // Returns [1, 2, 3, 4]
-   * await redisConn.pipelineCommands([
+   * await redisClient.pipelineCommands([
    *  ["INCR", "X"],
    *  ["INCR", "X"],
    *  ["INCR", "X"],
@@ -409,28 +413,8 @@ class RedisConn {
    * ```
    */
   async pipelineCommands(commands: Command[]): Promise<Reply[]> {
-    return await this.#queue.enqueue(async () =>
-      await pipelineCommands(this.#conn, commands)
+    return await this.#queue.enqueue(
+      async () => await pipelineCommands(this.#conn, commands),
     );
   }
-
-  /** Closes the connection. */
-  close() {
-    this.#conn.close();
-  }
-}
-
-/**
- * Connects to the Redis server via TCP and resolves to the connection.
- *
- * @example
- * ```ts
- * import { connect } from "https://deno.land/x/r2d2@$VERSION/mod.ts";
- *
- * const redisConn = await connect({ port: 6379 });
- * ```
- */
-export async function connect(options: Deno.ConnectOptions) {
-  const conn = await Deno.connect(options);
-  return new RedisConn(conn);
 }

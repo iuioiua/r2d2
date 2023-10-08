@@ -23,6 +23,9 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
 
+      - name: Update dependencies
+        run: deno task update
+
       - name: Create lcov file
         run: deno task cov:gen
 
@@ -32,9 +35,6 @@ jobs:
           name: ${{ matrix.os }}
           files: cov.lcov
       
-      - name: Update dependencies
-        run: deno task update
-
       - name: Create pull request
         uses: peter-evans/create-pull-request@v5
         with:

@@ -1,6 +1,6 @@
 import * as denoRedis from "https://deno.land/x/redis@v0.31.0/mod.ts";
 import { Redis } from "npm:ioredis@5.3.2";
-import nodeRedis from "npm:redis@4.6.8";
+import { createClient } from "npm:redis@4.6.10";
 
 import { RedisClient } from "./mod.ts";
 
@@ -15,8 +15,7 @@ const denoRedisConn = await denoRedis.connect({
 });
 const ioRedis = new Redis();
 
-const nodeRedisClient = nodeRedis.createClient({ socket: { host: HOSTNAME } });
-await nodeRedisClient.connect();
+const nodeRedisClient = await createClient().connect();
 
 Deno.bench({
   name: "r2d2",

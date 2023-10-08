@@ -284,28 +284,28 @@ export async function readReply(
 }
 
 async function sendCommand(
-  redisClient: Deno.Conn,
+  redisConn: Deno.Conn,
   command: Command,
   raw = false,
 ): Promise<Reply> {
-  await writeCommand(redisClient, command);
-  return await readReply(readDelim(redisClient, CRLF_RAW), raw);
+  await writeCommand(redisConn, command);
+  return await readReply(readDelim(redisConn, CRLF_RAW), raw);
 }
 
 async function pipelineCommands(
-  redisClient: Deno.Conn,
+  redisConn: Deno.Conn,
   commands: Command[],
 ): Promise<Reply[]> {
   const bytes = commands.map(createRequest);
-  await writeAll(redisClient, concat(...bytes));
-  return readNReplies(commands.length, readDelim(redisClient, CRLF_RAW));
+  await writeAll(redisConn, concat(...bytes));
+  return readNReplies(commands.length, readDelim(redisConn, CRLF_RAW));
 }
 
 async function* readReplies(
-  redisClient: Deno.Conn,
+  redisConn: Deno.Conn,
   raw = false,
 ): AsyncIterableIterator<Reply> {
-  const iterator = readDelim(redisClient, CRLF_RAW);
+  const iterator = readDelim(redisConn, CRLF_RAW);
   while (true) {
     yield await readReply(iterator, raw);
   }

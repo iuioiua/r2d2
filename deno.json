@@ -1,4 +1,7 @@
 {
+  "name": "@iuioiua/r2d2",
+  "version": "2.0.0",
+  "exports": "./mod.ts",
   "imports": {
     "https://deno.land/x/r2d2/": "./"
   },

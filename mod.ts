@@ -24,18 +24,12 @@ const BULK_STRING_PREFIX_STRING = "$";
 
 const ARRAY_PREFIX = ARRAY_PREFIX_STRING.charCodeAt(0);
 const ATTRIBUTE_PREFIX = "|".charCodeAt(0);
-const BIG_NUMBER_PREFIX = "(".charCodeAt(0);
 const BLOB_ERROR_PREFIX = "!".charCodeAt(0);
-const BOOLEAN_PREFIX = "#".charCodeAt(0);
 const BULK_STRING_PREFIX = BULK_STRING_PREFIX_STRING.charCodeAt(0);
-const DOUBLE_PREFIX = ",".charCodeAt(0);
 const ERROR_PREFIX = "-".charCodeAt(0);
-const INTEGER_PREFIX = ":".charCodeAt(0);
 const MAP_PREFIX = "%".charCodeAt(0);
-const NULL_PREFIX = "_".charCodeAt(0);
 const PUSH_PREFIX = ">".charCodeAt(0);
 const SET_PREFIX = "~".charCodeAt(0);
-const SIMPLE_STRING_PREFIX = "+".charCodeAt(0);
 const VERBATIM_STRING_PREFIX = "=".charCodeAt(0);
 
 const STREAMED_REPLY_START_DELIMITER = "?".charCodeAt(0);
@@ -131,20 +125,12 @@ async function readAttribute(
   return await readReply(iterator, raw);
 }
 
-function readBigNumber(line: Uint8Array): bigint {
-  return BigInt(removePrefix(line));
-}
-
 async function readBlobError(
   iterator: AsyncIterableIterator<Uint8Array>,
 ): Promise<never> {
   /** Skip to reading the next line, which is a string */
   const { value } = await iterator.next();
   return await Promise.reject(decoder.decode(value));
-}
-
-function readBoolean(line: Uint8Array): boolean {
-  return removePrefix(line) === "t";
 }
 
 async function readBulkOrVerbatimString(
@@ -172,27 +158,11 @@ async function readMap(
   return toObject(array);
 }
 
-function readNumberOrDouble(line: Uint8Array): number {
-  const number = removePrefix(line);
-  switch (number) {
-    case "inf":
-      return Infinity;
-    case "-inf":
-      return -Infinity;
-    default:
-      return Number(number);
-  }
-}
-
 async function readSet(
   line: Uint8Array,
   iterator: AsyncIterableIterator<Uint8Array>,
 ): Promise<Set<Reply>> {
   return new Set(await readArray(line, iterator));
-}
-
-function readSimpleString(line: Uint8Array): string {
-  return removePrefix(line);
 }
 
 async function readStreamedArray(
@@ -249,34 +219,23 @@ export async function readReply(
         : await readArray(value, iterator);
     case ATTRIBUTE_PREFIX:
       return await readAttribute(value, iterator);
-    case BIG_NUMBER_PREFIX:
-      return readBigNumber(value);
     case BLOB_ERROR_PREFIX:
       return readBlobError(iterator);
-    case BOOLEAN_PREFIX:
-      return readBoolean(value);
     case BULK_STRING_PREFIX:
     case VERBATIM_STRING_PREFIX:
       return isSteamedReply(value)
         ? await readStreamedString(iterator)
         : await readBulkOrVerbatimString(value, iterator, raw);
-    case DOUBLE_PREFIX:
-    case INTEGER_PREFIX:
-      return readNumberOrDouble(value);
     case ERROR_PREFIX:
       return readError(value);
     case MAP_PREFIX:
       return isSteamedReply(value)
         ? await readStreamedMap(iterator)
         : await readMap(value, iterator);
-    case NULL_PREFIX:
-      return null;
     case SET_PREFIX:
       return isSteamedReply(value)
         ? await readStreamedSet(iterator)
         : await readSet(value, iterator);
-    case SIMPLE_STRING_PREFIX:
-      return readSimpleString(value);
     /** No prefix */
     default:
       return decoder.decode(value);

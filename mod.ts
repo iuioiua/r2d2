@@ -1,10 +1,31 @@
 // deno-lint-ignore-file no-explicit-any
-import { chunk } from "https://deno.land/std@0.220.1/collections/chunk.ts";
-import { concat } from "https://deno.land/std@0.220.1/bytes/concat.ts";
-import { writeAll } from "https://deno.land/std@0.220.1/io/write_all.ts";
-import { readDelim } from "https://deno.land/std@0.220.1/io/read_delim.ts";
+import { chunk } from "@std/collections/chunk";
+import { concat } from "@std/bytes/concat";
+import { readDelim } from "@std/io/read_delim";
+import { writeAll } from "@std/io/write_all";
 
+/**
+ * A Redis client that can be used to send commands to a Redis server.
+ *
+ * ```ts
+ * import { RedisClient } from "jsr:@iuioiua/r2d2";
+ *
+ * const redisConn = await Deno.connect({ port: 6379 });
+ * const redisClient = new RedisClient(redisConn);
+ *
+ * // Returns "OK"
+ * await redisClient.sendCommand(["SET", "hello", "world"]);
+ *
+ * // Returns "world"
+ * await redisClient.sendCommand(["GET", "hello"]);
+ * ```
+ *
+ * @module
+ */
+
+/** Command sent to a Redis server. */
 export type Command = (string | number | Uint8Array)[];
+/** Reply received from a Redis server and triggered by a command. */
 export type Reply =
   | string
   | number
@@ -320,10 +341,28 @@ class AsyncQueue {
   }
 }
 
+/**
+ * A Redis client that can be used to send commands to a Redis server.
+ *
+ * @example
+ * ```ts
+ * import { RedisClient } from "jsr:@iuioiua/r2d2";
+ *
+ * const redisConn = await Deno.connect({ port: 6379 });
+ * const redisClient = new RedisClient(redisConn);
+ *
+ * // Returns "OK"
+ * await redisClient.sendCommand(["SET", "hello", "world"]);
+ *
+ * // Returns "world"
+ * await redisClient.sendCommand(["GET", "hello"]);
+ * ```
+ */
 export class RedisClient {
   #conn: Deno.TcpConn | Deno.TlsConn;
   #queue: AsyncQueue;
 
+  /** Constructs a new instance. */
   constructor(conn: Deno.TcpConn | Deno.TlsConn) {
     this.#conn = conn;
     this.#queue = new AsyncQueue();
@@ -334,7 +373,7 @@ export class RedisClient {
    *
    * @example
    * ```ts
-   * import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+   * import { RedisClient } from "jsr:@iuioiua/r2d2";
    *
    * const redisConn = await Deno.connect({ port: 6379 });
    * const redisClient = new RedisClient(redisConn);
@@ -357,7 +396,7 @@ export class RedisClient {
    *
    * @example
    * ```ts
-   * import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+   * import { RedisClient } from "jsr:@iuioiua/r2d2";
    *
    * const redisConn = await Deno.connect({ port: 6379 });
    * const redisClient = new RedisClient(redisConn);
@@ -376,7 +415,7 @@ export class RedisClient {
    *
    * @example
    * ```ts
-   * import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+   * import { RedisClient } from "jsr:@iuioiua/r2d2";
    *
    * const redisConn = await Deno.connect({ port: 6379 });
    * const redisClient = new RedisClient(redisConn);
@@ -398,7 +437,7 @@ export class RedisClient {
    *
    * @example
    * ```ts
-   * import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+   * import { RedisClient } from "jsr:@iuioiua/r2d2";
    *
    * const redisConn = await Deno.connect({ port: 6379 });
    * const redisClient = new RedisClient(redisConn);

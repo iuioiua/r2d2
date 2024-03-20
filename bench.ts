@@ -1,6 +1,6 @@
-import * as denoRedis from "https://deno.land/x/redis@v0.31.0/mod.ts";
+import * as denoRedis from "https://deno.land/x/redis@v0.32.2/mod.ts";
 import { Redis } from "npm:ioredis@5.3.2";
-import { createClient } from "npm:redis@4.6.10";
+import { createClient } from "npm:redis@4.6.13";
 
 import { RedisClient } from "./mod.ts";
 
@@ -89,7 +89,7 @@ Deno.bench({
     await nodeRedisClient.hSet("hash", { a: "foo", b: "bar" });
     await nodeRedisClient.hGetAll("hash");
 
-    /** Autopipelining */
+    /** Auto-pipelining */
     await nodeRedisClient.incr("X");
     await nodeRedisClient.incr("X");
     await nodeRedisClient.incr("X");

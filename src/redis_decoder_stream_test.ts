@@ -5,12 +5,16 @@ import {
 } from "./redis_decoder_stream.ts";
 import { assertEquals, assertRejects } from "@std/assert";
 
+function createStream(input: string[]) {
+  return ReadableStream.from(input)
+    .pipeThrough(new RedisDecoderStream());
+}
+
 async function assertReplyEquals(
   input: string[],
   expected: RedisReply[],
 ) {
-  const stream = ReadableStream.from(input)
-    .pipeThrough(new RedisDecoderStream());
+  const stream = createStream(input);
   const result = await Array.fromAsync(stream);
   assertEquals(result, expected);
 }
@@ -19,8 +23,7 @@ async function assertReplyRejects(
   input: string[],
   expected: string,
 ) {
-  const stream = ReadableStream.from(input)
-    .pipeThrough(new RedisDecoderStream());
+  const stream = createStream(input);
   await assertRejects(
     async () => await Array.fromAsync(stream),
     RedisError,
@@ -80,12 +83,12 @@ Deno.test("RedisDecoderStream bulk error", async () => {
 });
 
 Deno.test("RedisDecoderStream array", async () => {
-  // await assertReplyEquals(["*0"], []);
+  await assertReplyEquals(["*0"], []);
   await assertReplyEquals(["*2", "$5", "hello", "$5", "world"], [[
     "hello",
     "world",
   ]]);
-  // await assertReplyEquals(["*3", ":1", ":2", ":3"], [[1, 2, 3]]);
+  await assertReplyEquals(["*3", ":1", ":2", ":3"], [[1, 2, 3]]);
   /* await assertReplyEquals(
     ["*5", ":1", ":2", ":3", ":4", "$5", "hello"],
     [[1, 2, 3, 4, "hello"]],

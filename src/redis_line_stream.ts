@@ -22,23 +22,23 @@ function indexOfCrlf(
  *
  * @example
  * ```ts
- * import { LineStream } from "./line_stream.ts";
+ * import { RedisLineStream } from "./line_stream.ts";
  *
  * const stream = ReadableStream.from("hello\r\nthere\r\n")
  *   .pipeThrough(new TextEncoderStream())
- *   .pipeThrough(new LineStream())
+ *   .pipeThrough(new RedisLineStream())
  *   .pipeThrough(new TextDecoderStream());
  *
  * await Array.fromAsync(stream); // Returns [ "hello", "world" ]
  * ```
  */
-export class LineStream extends TransformStream<Uint8Array, Uint8Array> {
+export class RedisLineStream extends TransformStream<Uint8Array, Uint8Array> {
   constructor() {
-    let carryOver = new Uint8Array();
+    let carry = new Uint8Array();
 
     super({
       transform(chunk, controller) {
-        const buffer = concat([carryOver, chunk]);
+        const buffer = concat([carry, chunk]);
 
         let separatorIndex = indexOfCrlf(buffer, 0);
         let startSearchIndex = 0;
@@ -50,13 +50,7 @@ export class LineStream extends TransformStream<Uint8Array, Uint8Array> {
           separatorIndex = indexOfCrlf(buffer, startSearchIndex);
         }
 
-        carryOver = buffer.slice(startSearchIndex);
-      },
-      flush(controller) {
-        if (carryOver.length > 0) {
-          controller.enqueue(carryOver);
-          carryOver = new Uint8Array();
-        }
+        carry = buffer.slice(startSearchIndex);
       },
     });
   }

@@ -1,9 +1,6 @@
-import {
-  assertEquals,
-  assertRejects,
-} from "https://deno.land/std@0.220.1/assert/mod.ts";
-import { StringReader } from "https://deno.land/std@0.220.1/io/string_reader.ts";
-import { readDelim } from "https://deno.land/std@0.220.1/io/read_delim.ts";
+import { assertEquals, assertRejects } from "@std/assert";
+import { StringReader } from "@std/io/string_reader";
+import { readDelim } from "@std/io/read_delim";
 import { type Command, readReply, RedisClient, type Reply } from "./mod.ts";
 
 const encoder = new TextEncoder();

@@ -1,8 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { chunk } from "https://deno.land/std@0.203.0/collections/chunk.ts";
-import { concat } from "https://deno.land/std@0.203.0/bytes/concat.ts";
-import { writeAll } from "https://deno.land/std@0.203.0/streams/write_all.ts";
-import { readDelim } from "https://deno.land/std@0.203.0/io/read_delim.ts";
+import { chunk } from "https://deno.land/std@0.220.1/collections/chunk.ts";
+import { concat } from "https://deno.land/std@0.220.1/bytes/concat.ts";
+import { writeAll } from "https://deno.land/std@0.220.1/io/write_all.ts";
+import { readDelim } from "https://deno.land/std@0.220.1/io/read_delim.ts";
 
 export type Command = (string | number | Uint8Array)[];
 export type Reply =
@@ -59,7 +59,7 @@ function createRequest(command: Command): Uint8Array {
     lines.push(bytes);
     lines.push(CRLF_RAW);
   }
-  return concat(...lines);
+  return concat(lines);
 }
 
 async function writeCommand(
@@ -297,7 +297,7 @@ async function pipelineCommands(
   commands: Command[],
 ): Promise<Reply[]> {
   const bytes = commands.map(createRequest);
-  await writeAll(redisConn, concat(...bytes));
+  await writeAll(redisConn, concat(bytes));
   return readNReplies(commands.length, readDelim(redisConn, CRLF_RAW));
 }
 

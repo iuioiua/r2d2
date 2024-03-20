@@ -1,6 +1,6 @@
 # r2d2
 
-[![Docs](https://doc.deno.land/badge.svg)](https://doc.deno.land/https://deno.land/x/r2d2/mod.ts)
+[![Docs](https://doc.deno.land/badge.svg)](https://jsr.io/@iuioiua/r2d2)
 [![CI](https://github.com/iuioiua/r2d2/actions/workflows/ci.yml/badge.svg)](https://github.com/iuioiua/r2d2/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/iuioiua/r2d2/branch/main/graph/badge.svg?token=8IDAVSL014)](https://codecov.io/gh/iuioiua/r2d2)
 
@@ -20,12 +20,12 @@ Minimal [Redis](https://redis.io/) client for [Deno](https://deno.land/).
 ## Usage
 
 Must be run with `--allow-net` permission. Check out the full documentation
-[here](https://doc.deno.land/https://deno.land/x/r2d2/mod.ts).
+[here](https://jsr.io/@iuioiua/r2d2).
 
 ### RESPv2
 
 ```ts
-import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "jsr:@iuioiua/r2d2";
 
 const redisConn = await Deno.connect({ port: 6379 });
 const redisClient = new RedisClient(redisConn);
@@ -40,7 +40,7 @@ await redisClient.sendCommand(["GET", "hello"]);
 If you don't care about the reply:
 
 ```ts
-import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "jsr:@iuioiua/r2d2";
 
 const redisConn = await Deno.connect({ port: 6379 });
 const redisClient = new RedisClient(redisConn);
@@ -52,7 +52,7 @@ await redisClient.writeCommand(["SHUTDOWN"]);
 ### RESP3
 
 ```ts
-import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "jsr:@iuioiua/r2d2";
 
 const redisConn = await Deno.connect({ port: 6379 });
 const redisClient = new RedisClient(redisConn);
@@ -73,7 +73,7 @@ Set the last argument, `raw`, to `true` and bulk string replies will return raw
 data instead of strings.
 
 ```ts
-import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "jsr:@iuioiua/r2d2";
 
 const redisConn = await Deno.connect({ port: 6379 });
 const redisClient = new RedisClient(redisConn);
@@ -90,7 +90,7 @@ await redisClient.sendCommand(["GET", "binary"], true);
 ### Pipelining
 
 ```ts
-import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "jsr:@iuioiua/r2d2";
 
 const redisConn = await Deno.connect({ port: 6379 });
 const redisClient = new RedisClient(redisConn);
@@ -107,7 +107,7 @@ await redisClient.pipelineCommands([
 ### Pub/Sub
 
 ```ts
-import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "jsr:@iuioiua/r2d2";
 
 const redisConn = await Deno.connect({ port: 6379 });
 const redisClient = new RedisClient(redisConn);
@@ -122,7 +122,7 @@ for await (const reply of redisClient.readReplies()) {
 ### Transactions
 
 ```ts
-import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "jsr:@iuioiua/r2d2";
 
 const redisConn = await Deno.connect({ port: 6379 });
 const redisClient = new RedisClient(redisConn);
@@ -143,7 +143,7 @@ await redisClient.sendCommand(["EXEC"]);
 ### Eval Scripts
 
 ```ts
-import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "jsr:@iuioiua/r2d2";
 
 const redisConn = await Deno.connect({ port: 6379 });
 const redisClient = new RedisClient(redisConn);
@@ -155,7 +155,7 @@ await redisClient.sendCommand(["EVAL", "return ARGV[1]", 0, "hello"]);
 ### Lua Scripts
 
 ```ts
-import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+import { RedisClient } from "jsr:@iuioiua/r2d2";
 
 const redisConn = await Deno.connect({ port: 6379 });
 const redisClient = new RedisClient(redisConn);
@@ -174,11 +174,11 @@ await redisClient.sendCommand(["FCALL", "knockknock", 0]);
 ### Timeouts
 
 For further details on `deadline()`, see the documentation
-[here](https://deno.land/std/async/deadline.ts?s=deadline).
+[here](https://jsr.io/@std/async/doc/~/deadline).
 
 ```ts
-import { deadline } from "https://deno.land/std/async/deadline.ts";
-import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+import { deadline } from "jsr:@std/async";
+import { RedisClient } from "jsr:@iuioiua/r2d2";
 
 const redisConn = await Deno.connect({ port: 6379 });
 const redisClient = new RedisClient(redisConn);
@@ -192,11 +192,11 @@ await deadline(redisClient.sendCommand(["SLOWLOG", "GET"]), 100);
 ### Retries
 
 For further details on `retry()`, see the documentation
-[here](https://deno.land/std/async/retry.ts?s=retry).
+[here](https://jsr.io/@std/async/doc/~/retry).
 
 ```ts
-import { retry } from "https://deno.land/std/async/retry.ts";
-import { RedisClient } from "https://deno.land/x/r2d2/mod.ts";
+import { retry } from "jsr:@std/async";
+import { RedisClient } from "jsr:@iuioiua/r2d2";
 
 // Retries to connect until successful using the exponential backoff algorithm.
 const redisConn = await retry(async () => await Deno.connect({ port: 6379 }));

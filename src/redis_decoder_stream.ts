@@ -1,3 +1,5 @@
+import { chunk } from "@std/collections/chunk";
+
 const SIMPLE_STRING_PREFIX = "+" as const;
 const SIMPLE_ERROR_PREFIX = "-" as const;
 const INTEGER_PREFIX = ":" as const;
@@ -9,14 +11,21 @@ const DOUBLE_PREFIX = "," as const;
 const BIG_NUMBER_PREFIX = "(" as const;
 const BULK_ERROR_PREFIX = "!" as const;
 const VERBATIM_STRING_PREFIX = "=" as const;
+const MAP_PREFIX = "%" as const;
+const SET_PREFIX = "~" as const;
+const PUSH_PREFIX = ">" as const;
 
-export type RedisReply =
+type RedisReplyPart =
   | string
   | number
   | null
   | boolean
-  | bigint
-  | RedisReply[];
+  | bigint;
+export type RedisReply =
+  | RedisReplyPart
+  | Record<string, RedisReplyPart>
+  | Set<RedisReplyPart>
+  | RedisReplyPart[];
 
 export class RedisError extends Error {
   constructor(message: string, options?: ErrorOptions) {
@@ -25,37 +34,41 @@ export class RedisError extends Error {
   }
 }
 
+/**
+ * @returns `undefined` if the value of the current line is to be ignored.
+ */
 function parseLine(line: string): RedisReply | undefined {
-  switch (line[0]) {
+  const prefix = line[0];
+  const value = line.slice(1);
+
+  switch (prefix) {
     case SIMPLE_STRING_PREFIX:
-      return line.slice(1);
+      return value;
     case SIMPLE_ERROR_PREFIX:
-      throw new RedisError(line.slice(1));
+    case BULK_ERROR_PREFIX:
+      throw new RedisError(value);
     case INTEGER_PREFIX:
-      return Number(line.slice(1));
-    case BULK_STRING_PREFIX: {
-      const length = Number(line.slice(1));
-      return length === -1 ? null : undefined;
-    }
+      return Number(value);
+    case BULK_STRING_PREFIX:
+      return Number(value) === -1 ? null : undefined;
     case NULL_PREFIX:
       return null;
     case BOOLEAN_PREFIX:
-      return line[1] === "t";
-    case DOUBLE_PREFIX: {
-      const number = line.slice(1);
-      switch (number) {
+      return value === "t";
+    case DOUBLE_PREFIX:
+      switch (value) {
         case "inf":
           return Infinity;
         case "-inf":
           return -Infinity;
         default:
-          return Number(number);
+          return Number(value);
       }
-    }
     case BIG_NUMBER_PREFIX:
-      return BigInt(line.slice(1));
-    case BULK_ERROR_PREFIX:
-      throw new RedisError(line);
+      return BigInt(value);
+    case VERBATIM_STRING_PREFIX:
+      return undefined;
+
     default:
       return line;
   }
@@ -68,45 +81,58 @@ export class RedisDecoderStream extends TransformStream<string, RedisReply> {
     let previousPrefix:
       | typeof BULK_ERROR_PREFIX
       | typeof ARRAY_PREFIX
+      | typeof MAP_PREFIX
+      | typeof SET_PREFIX
+      | typeof PUSH_PREFIX
       | undefined = undefined;
     super({
       transform(line, controller) {
-        if (previousPrefix === ARRAY_PREFIX) {
-          const result = parseLine(line);
-          if (result === undefined) {
-            return;
-          } else {
-            array!.push(parseLine(line)!);
-          }
-          if (array!.length === count!) {
-            controller.enqueue(array!);
-            previousPrefix = undefined;
-            array = undefined;
-            count = undefined;
-          }
-          return;
-        }
-        switch (line[0]) {
-          case SIMPLE_STRING_PREFIX: {
-            controller.enqueue(line.slice(1));
-            break;
-          }
-          case SIMPLE_ERROR_PREFIX: {
-            controller.error(new RedisError(line.slice(1)));
-            break;
-          }
-          case INTEGER_PREFIX: {
-            controller.enqueue(Number(line.slice(1)));
-            break;
-          }
-          case VERBATIM_STRING_PREFIX:
-          case BULK_STRING_PREFIX: {
-            const length = line.slice(1);
-            if (length === "-1") {
-              controller.enqueue(null);
+        switch (previousPrefix) {
+          case PUSH_PREFIX:
+          case ARRAY_PREFIX: {
+            const result = parseLine(line);
+            if (result === undefined) return;
+            array!.push(result);
+            if (array!.length === count!) {
+              controller.enqueue(array! as RedisReply);
+              previousPrefix = undefined;
+              array = undefined;
+              count = undefined;
             }
             break;
           }
+          case BULK_ERROR_PREFIX: {
+            controller.error(new RedisError(line));
+            previousPrefix = undefined;
+            break;
+          }
+          case MAP_PREFIX: {
+            const result = parseLine(line);
+            if (result === undefined) return;
+            array!.push(result);
+            if (array!.length === count!) {
+              controller.enqueue(Object.fromEntries(chunk(array!, 2)));
+              previousPrefix = undefined;
+              array = undefined;
+              count = undefined;
+            }
+            break;
+          }
+          case SET_PREFIX: {
+            const result = parseLine(line);
+            if (result === undefined) return;
+            array!.push(result);
+            if (array!.length === count!) {
+              controller.enqueue(new Set(array!) as RedisReply);
+              previousPrefix = undefined;
+              array = undefined;
+              count = undefined;
+            }
+            break;
+          }
+        }
+        switch (line[0]) {
+          case PUSH_PREFIX:
           case ARRAY_PREFIX: {
             count = Number(line.slice(1));
             if (count === 0) {
@@ -117,44 +143,27 @@ export class RedisDecoderStream extends TransformStream<string, RedisReply> {
             array = [];
             break;
           }
-          case NULL_PREFIX: {
-            controller.enqueue(null);
-            break;
-          }
-          case BOOLEAN_PREFIX: {
-            controller.enqueue(line[1] === "t");
-            break;
-          }
-          case DOUBLE_PREFIX: {
-            const number = line.slice(1);
-            switch (number) {
-              case "inf":
-                controller.enqueue(Infinity);
-                break;
-              case "-inf":
-                controller.enqueue(-Infinity);
-                break;
-              default:
-                controller.enqueue(Number(number));
-                break;
-            }
-            break;
-          }
-          case BIG_NUMBER_PREFIX: {
-            controller.enqueue(BigInt(line.slice(1)));
-            break;
-          }
           case BULK_ERROR_PREFIX: {
             previousPrefix = BULK_ERROR_PREFIX;
             break;
           }
-          default: {
-            if (previousPrefix === BULK_ERROR_PREFIX) {
-              controller.error(new RedisError(line));
-              previousPrefix = undefined;
-            }
-            controller.enqueue(line);
+          case MAP_PREFIX: {
+            count = Number(line.slice(1)) * 2;
+            previousPrefix = MAP_PREFIX;
+            array = [];
             break;
+          }
+          case SET_PREFIX: {
+            count = Number(line.slice(1));
+            previousPrefix = SET_PREFIX;
+            array = [];
+            break;
+          }
+          default: {
+            const result = parseLine(line);
+            if (result !== undefined) {
+              controller.enqueue(result);
+            }
           }
         }
       },

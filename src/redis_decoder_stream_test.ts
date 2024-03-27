@@ -1,7 +1,7 @@
 import {
   RedisDecoderStream,
   RedisError,
-  RedisReply,
+  type RedisReply,
 } from "./redis_decoder_stream.ts";
 import { assertEquals, assertRejects } from "@std/assert";
 
@@ -83,20 +83,46 @@ Deno.test("RedisDecoderStream bulk error", async () => {
 });
 
 Deno.test("RedisDecoderStream array", async () => {
-  await assertReplyEquals(["*0"], []);
+  await assertReplyEquals(["*0"], [[]]);
   await assertReplyEquals(["*2", "$5", "hello", "$5", "world"], [[
     "hello",
     "world",
   ]]);
   await assertReplyEquals(["*3", ":1", ":2", ":3"], [[1, 2, 3]]);
-  /* await assertReplyEquals(
+  await assertReplyEquals(
     ["*5", ":1", ":2", ":3", ":4", "$5", "hello"],
     [[1, 2, 3, 4, "hello"]],
-  ); */
+  );
 });
 
 Deno.test("RedisDecoderStream verbatim string", async () => {
   await assertReplyEquals(["=15", "txt:Some string"], [
     "txt:Some string",
   ]);
+});
+
+Deno.test("RedisDecoderStream map", async () => {
+  await assertReplyEquals(["%2", "key1", "$5", "hello", "key2", ":1"], [
+    { key1: "hello", key2: 1 },
+  ]);
+});
+
+Deno.test("RedisDecoderStream set", async () => {
+  await assertReplyEquals(
+    ["~5", "+orange", "+apple", "#t", ":100", ":999"],
+    [new Set(["orange", "apple", true, 100, 999])],
+  );
+});
+
+Deno.test("RedisDecoderStream push", async () => {
+  await assertReplyEquals([">0"], [[]]);
+  await assertReplyEquals([">2", "$5", "hello", "$5", "world"], [[
+    "hello",
+    "world",
+  ]]);
+  await assertReplyEquals([">3", ":1", ":2", ":3"], [[1, 2, 3]]);
+  await assertReplyEquals(
+    [">5", ":1", ":2", ":3", ":4", "$5", "hello"],
+    [[1, 2, 3, 4, "hello"]],
+  );
 });

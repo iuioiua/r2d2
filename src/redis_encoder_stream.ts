@@ -1,7 +1,5 @@
 export type RedisCommand = (string | number)[];
 
-type X = ["SET", string, (number | string | Uint8Array)];
-
 export class RedisEncoderStream extends TransformStream<RedisCommand, string> {
   constructor() {
     super({

@@ -45,12 +45,18 @@ const BULK_STRING_PREFIX_STRING = "$";
 
 const ARRAY_PREFIX = ARRAY_PREFIX_STRING.charCodeAt(0);
 const ATTRIBUTE_PREFIX = "|".charCodeAt(0);
+const BIG_NUMBER_PREFIX = "(".charCodeAt(0);
 const BLOB_ERROR_PREFIX = "!".charCodeAt(0);
+const BOOLEAN_PREFIX = "#".charCodeAt(0);
 const BULK_STRING_PREFIX = BULK_STRING_PREFIX_STRING.charCodeAt(0);
+const DOUBLE_PREFIX = ",".charCodeAt(0);
 const ERROR_PREFIX = "-".charCodeAt(0);
+const INTEGER_PREFIX = ":".charCodeAt(0);
 const MAP_PREFIX = "%".charCodeAt(0);
+const NULL_PREFIX = "_".charCodeAt(0);
 const PUSH_PREFIX = ">".charCodeAt(0);
 const SET_PREFIX = "~".charCodeAt(0);
+const SIMPLE_STRING_PREFIX = "+".charCodeAt(0);
 const VERBATIM_STRING_PREFIX = "=".charCodeAt(0);
 
 const STREAMED_REPLY_START_DELIMITER = "?".charCodeAt(0);
@@ -98,7 +104,7 @@ function toObject(array: any[]): Record<string, any> {
 
 async function readNReplies(
   length: number,
-  iterator: ReadableStreamDefaultReader<Uint8Array>,
+  iterator: AsyncIterableIterator<Uint8Array>,
   raw = false,
 ): Promise<Reply[]> {
   const replies: Reply[] = [];
@@ -110,7 +116,7 @@ async function readNReplies(
 
 async function readStreamedReply(
   delimiter: string,
-  iterator: ReadableStreamDefaultReader<Uint8Array>,
+  iterator: AsyncIterableIterator<Uint8Array>,
   raw = false,
 ): Promise<Reply[]> {
   const replies: Reply[] = [];
@@ -126,7 +132,7 @@ async function readStreamedReply(
 
 async function readArray(
   line: Uint8Array,
-  iterator: ReadableStreamDefaultReader<Uint8Array>,
+  iterator: AsyncIterableIterator<Uint8Array>,
 ): Promise<null | Reply[]> {
   const length = readNumberOrDouble(line);
   return length === -1 ? null : await readNReplies(length, iterator);
@@ -139,24 +145,32 @@ async function readArray(
  */
 async function readAttribute(
   line: Uint8Array,
-  iterator: ReadableStreamDefaultReader<Uint8Array>,
+  iterator: AsyncIterableIterator<Uint8Array>,
   raw = false,
 ): Promise<null | Reply> {
   await readMap(line, iterator);
   return await readReply(iterator, raw);
 }
 
+function readBigNumber(line: Uint8Array): bigint {
+  return BigInt(removePrefix(line));
+}
+
 async function readBlobError(
-  iterator: ReadableStreamDefaultReader<Uint8Array>,
+  iterator: AsyncIterableIterator<Uint8Array>,
 ): Promise<never> {
   /** Skip to reading the next line, which is a string */
   const { value } = await iterator.next();
   return await Promise.reject(decoder.decode(value));
 }
 
+function readBoolean(line: Uint8Array): boolean {
+  return removePrefix(line) === "t";
+}
+
 async function readBulkOrVerbatimString(
   line: Uint8Array,
-  iterator: ReadableStreamDefaultReader<Uint8Array>,
+  iterator: AsyncIterableIterator<Uint8Array>,
   raw = false,
 ): Promise<string | null> {
   if (readNumberOrDouble(line) === -1) {
@@ -172,28 +186,44 @@ async function readError(line: Uint8Array): Promise<never> {
 
 async function readMap(
   line: Uint8Array,
-  iterator: ReadableStreamDefaultReader<Uint8Array>,
+  iterator: AsyncIterableIterator<Uint8Array>,
 ): Promise<Record<string, any>> {
   const length = readNumberOrDouble(line) * 2;
   const array = await readNReplies(length, iterator);
   return toObject(array);
 }
 
+function readNumberOrDouble(line: Uint8Array): number {
+  const number = removePrefix(line);
+  switch (number) {
+    case "inf":
+      return Infinity;
+    case "-inf":
+      return -Infinity;
+    default:
+      return Number(number);
+  }
+}
+
 async function readSet(
   line: Uint8Array,
-  iterator: ReadableStreamDefaultReader<Uint8Array>,
+  iterator: AsyncIterableIterator<Uint8Array>,
 ): Promise<Set<Reply>> {
   return new Set(await readArray(line, iterator));
 }
 
+function readSimpleString(line: Uint8Array): string {
+  return removePrefix(line);
+}
+
 async function readStreamedArray(
-  iterator: ReadableStreamDefaultReader<Uint8Array>,
+  iterator: AsyncIterableIterator<Uint8Array>,
 ): Promise<Reply[]> {
   return await readStreamedReply(STREAMED_AGGREGATE_END_DELIMITER, iterator);
 }
 
 async function readStreamedMap(
-  iterator: ReadableStreamDefaultReader<Uint8Array>,
+  iterator: AsyncIterableIterator<Uint8Array>,
 ): Promise<Record<string, any>> {
   const array = await readStreamedReply(
     STREAMED_AGGREGATE_END_DELIMITER,
@@ -203,13 +233,13 @@ async function readStreamedMap(
 }
 
 async function readStreamedSet(
-  iterator: ReadableStreamDefaultReader<Uint8Array>,
+  iterator: AsyncIterableIterator<Uint8Array>,
 ): Promise<Set<Reply>> {
   return new Set(await readStreamedArray(iterator));
 }
 
 async function readStreamedString(
-  iterator: ReadableStreamDefaultReader<Uint8Array>,
+  iterator: AsyncIterableIterator<Uint8Array>,
 ): Promise<string> {
   return (await readStreamedReply(STREAMED_STRING_END_DELIMITER, iterator))
     /** Remove byte counts */
@@ -225,11 +255,11 @@ async function readStreamedString(
  * @private
  */
 export async function readReply(
-  iterator: ReadableStreamDefaultReader<Uint8Array>,
+  iterator: AsyncIterableIterator<Uint8Array>,
   raw = false,
 ): Promise<Reply> {
-  const { value } = await iterator.read();
-  if (value === undefined) {
+  const { value } = await iterator.next();
+  if (value.length === 0) {
     return await Promise.reject(new TypeError("No reply received"));
   }
   switch (value[0]) {
@@ -240,23 +270,34 @@ export async function readReply(
         : await readArray(value, iterator);
     case ATTRIBUTE_PREFIX:
       return await readAttribute(value, iterator);
+    case BIG_NUMBER_PREFIX:
+      return readBigNumber(value);
     case BLOB_ERROR_PREFIX:
       return readBlobError(iterator);
+    case BOOLEAN_PREFIX:
+      return readBoolean(value);
     case BULK_STRING_PREFIX:
     case VERBATIM_STRING_PREFIX:
       return isSteamedReply(value)
         ? await readStreamedString(iterator)
         : await readBulkOrVerbatimString(value, iterator, raw);
+    case DOUBLE_PREFIX:
+    case INTEGER_PREFIX:
+      return readNumberOrDouble(value);
     case ERROR_PREFIX:
       return readError(value);
     case MAP_PREFIX:
       return isSteamedReply(value)
         ? await readStreamedMap(iterator)
         : await readMap(value, iterator);
+    case NULL_PREFIX:
+      return null;
     case SET_PREFIX:
       return isSteamedReply(value)
         ? await readStreamedSet(iterator)
         : await readSet(value, iterator);
+    case SIMPLE_STRING_PREFIX:
+      return readSimpleString(value);
     /** No prefix */
     default:
       return decoder.decode(value);
@@ -284,7 +325,7 @@ async function pipelineCommands(
 async function* readReplies(
   redisConn: Deno.Conn,
   raw = false,
-): ReadableStreamDefaultReader<Reply> {
+): AsyncIterableIterator<Reply> {
   const iterator = readDelim(redisConn, CRLF_RAW);
   while (true) {
     yield await readReply(iterator, raw);
@@ -387,7 +428,7 @@ export class RedisClient {
    * }
    * ```
    */
-  readReplies(raw = false): ReadableStreamDefaultReader<Reply> {
+  readReplies(raw = false): AsyncIterableIterator<Reply> {
     return readReplies(this.#conn, raw);
   }
 

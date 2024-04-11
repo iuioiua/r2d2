@@ -1,11 +1,9 @@
 import { RedisLineStream } from "./redis_line_stream.ts";
-import { assertEquals } from "https://deno.land/std@0.210.0/assert/assert_equals.ts";
+import { assertEquals } from "@std/assert";
 
-Deno.test("LineStream", async () => {
+Deno.test("RedisLineStream", async () => {
   const stream = ReadableStream.from("hello\r\nthere\r\n")
-    .pipeThrough(new TextEncoderStream())
-    .pipeThrough(new RedisLineStream())
-    .pipeThrough(new TextDecoderStream());
+    .pipeThrough(new RedisLineStream());
 
   const result = await Array.fromAsync(stream);
   assertEquals(result, ["hello", "there"]);

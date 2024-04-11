@@ -98,7 +98,7 @@ function toObject(array: any[]): Record<string, any> {
 
 async function readNReplies(
   length: number,
-  iterator: AsyncIterableIterator<Uint8Array>,
+  iterator: ReadableStreamDefaultReader<Uint8Array>,
   raw = false,
 ): Promise<Reply[]> {
   const replies: Reply[] = [];
@@ -110,7 +110,7 @@ async function readNReplies(
 
 async function readStreamedReply(
   delimiter: string,
-  iterator: AsyncIterableIterator<Uint8Array>,
+  iterator: ReadableStreamDefaultReader<Uint8Array>,
   raw = false,
 ): Promise<Reply[]> {
   const replies: Reply[] = [];
@@ -126,7 +126,7 @@ async function readStreamedReply(
 
 async function readArray(
   line: Uint8Array,
-  iterator: AsyncIterableIterator<Uint8Array>,
+  iterator: ReadableStreamDefaultReader<Uint8Array>,
 ): Promise<null | Reply[]> {
   const length = readNumberOrDouble(line);
   return length === -1 ? null : await readNReplies(length, iterator);
@@ -139,7 +139,7 @@ async function readArray(
  */
 async function readAttribute(
   line: Uint8Array,
-  iterator: AsyncIterableIterator<Uint8Array>,
+  iterator: ReadableStreamDefaultReader<Uint8Array>,
   raw = false,
 ): Promise<null | Reply> {
   await readMap(line, iterator);
@@ -147,7 +147,7 @@ async function readAttribute(
 }
 
 async function readBlobError(
-  iterator: AsyncIterableIterator<Uint8Array>,
+  iterator: ReadableStreamDefaultReader<Uint8Array>,
 ): Promise<never> {
   /** Skip to reading the next line, which is a string */
   const { value } = await iterator.next();
@@ -156,7 +156,7 @@ async function readBlobError(
 
 async function readBulkOrVerbatimString(
   line: Uint8Array,
-  iterator: AsyncIterableIterator<Uint8Array>,
+  iterator: ReadableStreamDefaultReader<Uint8Array>,
   raw = false,
 ): Promise<string | null> {
   if (readNumberOrDouble(line) === -1) {
@@ -172,7 +172,7 @@ async function readError(line: Uint8Array): Promise<never> {
 
 async function readMap(
   line: Uint8Array,
-  iterator: AsyncIterableIterator<Uint8Array>,
+  iterator: ReadableStreamDefaultReader<Uint8Array>,
 ): Promise<Record<string, any>> {
   const length = readNumberOrDouble(line) * 2;
   const array = await readNReplies(length, iterator);
@@ -181,19 +181,19 @@ async function readMap(
 
 async function readSet(
   line: Uint8Array,
-  iterator: AsyncIterableIterator<Uint8Array>,
+  iterator: ReadableStreamDefaultReader<Uint8Array>,
 ): Promise<Set<Reply>> {
   return new Set(await readArray(line, iterator));
 }
 
 async function readStreamedArray(
-  iterator: AsyncIterableIterator<Uint8Array>,
+  iterator: ReadableStreamDefaultReader<Uint8Array>,
 ): Promise<Reply[]> {
   return await readStreamedReply(STREAMED_AGGREGATE_END_DELIMITER, iterator);
 }
 
 async function readStreamedMap(
-  iterator: AsyncIterableIterator<Uint8Array>,
+  iterator: ReadableStreamDefaultReader<Uint8Array>,
 ): Promise<Record<string, any>> {
   const array = await readStreamedReply(
     STREAMED_AGGREGATE_END_DELIMITER,
@@ -203,13 +203,13 @@ async function readStreamedMap(
 }
 
 async function readStreamedSet(
-  iterator: AsyncIterableIterator<Uint8Array>,
+  iterator: ReadableStreamDefaultReader<Uint8Array>,
 ): Promise<Set<Reply>> {
   return new Set(await readStreamedArray(iterator));
 }
 
 async function readStreamedString(
-  iterator: AsyncIterableIterator<Uint8Array>,
+  iterator: ReadableStreamDefaultReader<Uint8Array>,
 ): Promise<string> {
   return (await readStreamedReply(STREAMED_STRING_END_DELIMITER, iterator))
     /** Remove byte counts */
@@ -225,11 +225,11 @@ async function readStreamedString(
  * @private
  */
 export async function readReply(
-  iterator: AsyncIterableIterator<Uint8Array>,
+  iterator: ReadableStreamDefaultReader<Uint8Array>,
   raw = false,
 ): Promise<Reply> {
-  const { value } = await iterator.next();
-  if (value.length === 0) {
+  const { value } = await iterator.read();
+  if (value === undefined) {
     return await Promise.reject(new TypeError("No reply received"));
   }
   switch (value[0]) {
@@ -284,7 +284,7 @@ async function pipelineCommands(
 async function* readReplies(
   redisConn: Deno.Conn,
   raw = false,
-): AsyncIterableIterator<Reply> {
+): ReadableStreamDefaultReader<Reply> {
   const iterator = readDelim(redisConn, CRLF_RAW);
   while (true) {
     yield await readReply(iterator, raw);
@@ -387,7 +387,7 @@ export class RedisClient {
    * }
    * ```
    */
-  readReplies(raw = false): AsyncIterableIterator<Reply> {
+  readReplies(raw = false): ReadableStreamDefaultReader<Reply> {
     return readReplies(this.#conn, raw);
   }
 

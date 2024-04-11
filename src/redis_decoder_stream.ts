@@ -170,3 +170,66 @@ export class RedisDecoderStream extends TransformStream<string, RedisReply> {
     });
   }
 }
+
+const CRLF = "\r\n";
+
+class RedisTransformStream
+  extends TransformStream<string, (number | string | string[])> {
+  constructor() {
+    let currentArray: string[] | null = null;
+    let itemsToRead = 0;
+    let partialLine = "";
+
+    super({
+      transform(chars, controller) {
+        const lines = (partialLine + chars).split(CRLF);
+        partialLine = lines.pop() || ""; // Save any partial line for the next chunk
+
+        lines.forEach((line) => {
+          if (itemsToRead === 0) {
+            // Detect the type of data from the prefix
+            const prefix = line.charAt(0);
+            switch (prefix) {
+              case "*": // Start of an array
+                itemsToRead = parseInt(line.substring(1), 10);
+                currentArray = [];
+                if (itemsToRead === 0) {
+                  // For empty arrays, immediately output them
+                  controller.enqueue(currentArray);
+                  currentArray = null;
+                }
+                break;
+              case "+": // Simple string
+                controller.enqueue(line.substring(1));
+                break;
+              case ":": // Integer
+                controller.enqueue(Number(line.substring(1)!));
+                break;
+                // Handle other types as necessary
+            }
+          } else {
+            // Add the line to the current array being processed
+            currentArray!.push(line);
+            itemsToRead--;
+            if (itemsToRead === 0) {
+              // Once all elements of the array have been read, output the array
+              controller.enqueue(currentArray!);
+              currentArray = null;
+            }
+          }
+        });
+      },
+      flush(controller) {
+        if (partialLine) {
+          // Handle any remaining partial data
+          console.warn("Unprocessed partial data:", partialLine);
+          partialLine = "";
+        }
+        if (currentArray !== null) {
+          // In case the stream ends while an array is still being processed
+          controller.enqueue(currentArray);
+        }
+      },
+    });
+  }
+}

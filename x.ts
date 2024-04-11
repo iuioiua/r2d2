@@ -14,6 +14,7 @@ export type RedisReply =
   | RedisReply[]
   | Set<RedisReply>;
 
+const CRLF = "\r\n";
 const SIMPLE_STRING_PREFIX = "+";
 const SIMPLE_ERROR_PREFIX = "-";
 const INTEGER_PREFIX = ":";
@@ -28,6 +29,19 @@ const VERBATIM_STRING_PREFIX = "=";
 const MAP_PREFIX = "%";
 const SET_PREFIX = "~";
 const PUSH_PREFIX = ">";
+
+export class RedisLineStream extends TransformStream<string, string> {
+  constructor() {
+    let partialLine = "";
+    super({
+      transform(chars, controller) {
+        const lines = (partialLine + chars).split(CRLF);
+        partialLine = lines.pop() || "";
+        lines.forEach((line) => controller.enqueue(line));
+      },
+    });
+  }
+}
 
 /**
  * An error that occurs in a Redis operation.
@@ -53,7 +67,7 @@ async function readReplies(
   return replies;
 }
 
-async function readReply(
+export async function readReply(
   reader: ReadableStreamDefaultReader<string>,
 ): Promise<RedisReply> {
   const { value: line } = await reader.read();
@@ -64,8 +78,11 @@ async function readReply(
     case SIMPLE_STRING_PREFIX:
       return value;
     case SIMPLE_ERROR_PREFIX:
-    case BULK_ERROR_PREFIX:
       throw new RedisError(value);
+    case BULK_ERROR_PREFIX: {
+      const error = await readReply(reader) as string;
+      throw new RedisError(error);
+    }
     case INTEGER_PREFIX:
       return Number(value);
     case BULK_STRING_PREFIX:
@@ -103,6 +120,60 @@ async function readReply(
     }
     // No prefix
     default:
-      return value;
+      return line;
+  }
+}
+
+export type RedisCommand = (string | number)[];
+
+export class RedisEncoderStream extends TransformStream<RedisCommand, string> {
+  constructor() {
+    super({
+      transform(command, controller) {
+        const encodedCommand = command
+          .map((arg) => `$${String(arg).length}\r\n${arg}\r\n`)
+          .join("");
+        controller.enqueue(`*${command.length}\r\n${encodedCommand}`);
+      },
+    });
+  }
+}
+
+interface Conn {
+  readonly readable: ReadableStream<Uint8Array>;
+  readonly writable: WritableStream<Uint8Array>;
+}
+
+export class RedisClient {
+  #reader: ReadableStreamDefaultReader<string>;
+  #writable: WritableStream<Uint8Array>;
+
+  constructor(conn: Conn) {
+    this.#reader = conn.readable
+      .pipeThrough(new TextDecoderStream())
+      .getReader();
+    this.#writable = conn.writable;
+  }
+
+  async read(): Promise<RedisReply> {
+    return await readReply(this.#reader);
+  }
+
+  async write(command: RedisCommand) {
+    await ReadableStream.from(command)
+      .pipeThrough(new TextEncoderStream())
+      .pipeTo(this.#writable);
+  }
+
+  async command(command: RedisCommand): Promise<RedisReply> {
+    await this.write(command);
+    return await this.read();
+  }
+
+  async pipeline(commands: RedisCommand[]): Promise<RedisReply[]> {
+    for (const command of commands) {
+      await this.write(command);
+    }
+    return await readReplies(this.#reader, commands.length);
   }
 }

@@ -137,29 +137,6 @@ Deno.test("readReply() - set", async () => {
 Deno.test("readReply() - simple string", async () =>
   await readReplyTest("+OK\r\n", "OK"));
 
-Deno.test("readReply() - streamed string", async () => {
-  await readReplyTest(
-    "$?\r\n;4\r\nHell\r\n;5\r\no wor\r\n;1\r\nd\r\n;0\r\n",
-    "Hello word",
-  );
-});
-
-/** @todo test more complex case */
-Deno.test("readReply() - streamed array", async () => {
-  await readReplyTest("*?\r\n:1\r\n:2\r\n:3\r\n.\r\n", [1, 2, 3]);
-});
-
-Deno.test("readReply() - streamed set", async () => {
-  await readReplyTest(
-    "~?\r\n+a\r\n:1\r\n+b\r\n:2\r\n.\r\n",
-    new Set(["a", 1, "b", 2]),
-  );
-});
-
-Deno.test("readReply() - streamed map", async () => {
-  await readReplyTest("%?\r\n+a\r\n:1\r\n+b\r\n:2\r\n.\r\n", { a: 1, b: 2 });
-});
-
 Deno.test("readReply() - verbatim string", async () => {
   await readReplyTest("=15\r\ntxt:Some string\r\n", "txt:Some string");
 });

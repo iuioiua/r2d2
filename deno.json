@@ -12,19 +12,17 @@
   },
   "tasks": {
     "redis:start": "redis-server --save \"\" --appendonly no --daemonize yes",
-    "test": "deno test --allow-net --trace-leaks --coverage=cov --doc --parallel",
+    "test": "deno test --allow-net --trace-leaks --coverage --doc --parallel",
     "test:dev": "deno task redis:start && deno task test || redis-cli SHUTDOWN",
     "bench": "deno bench --allow-net --allow-env",
     "bench:dev": "deno task redis:start && deno task bench",
-    "cov:clean": "rm -rf cov html_cov cov.lcov",
-    "cov:gen": "deno coverage ./cov/ --lcov --output=cov.lcov",
-    "cov:view": "genhtml -o html_cov cov.lcov && open html_cov/index.html",
+    "coverage": "deno coverage coverage",
     "ok": "deno fmt --check && deno lint && deno task test",
     "ok:dev": "deno fmt --check && deno lint && deno task test:dev",
     "update:dev": "deno run -A https://deno.land/x/udd/main.ts --test=\"deno task ok:dev\" mod.ts test.ts",
     "update": "deno run -A https://deno.land/x/udd/main.ts --test=\"deno task ok\" mod.ts test.ts"
   },
   "exclude": [
-    "/cov"
+    "/coverage"
   ]
 }

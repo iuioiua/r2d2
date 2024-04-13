@@ -56,6 +56,7 @@ Deno.test("readReply() bulk string", async () => {
 });
 
 Deno.test("readReply() array", async () => {
+  await assertReplyEquals(["*-1"], null);
   await assertReplyEquals(["*0"], []);
   await assertReplyEquals(["*2", "$5", "hello", "$5", "world"], [
     "hello",

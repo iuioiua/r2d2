@@ -9,7 +9,9 @@ const PORT = 6379;
 
 const redisConn = await Deno.connect({ hostname: HOSTNAME, port: PORT });
 const redisClient = new RedisClient(redisConn);
-const redisClient2 = new RedisClient2(redisConn);
+
+const redisConn2 = await Deno.connect({ hostname: HOSTNAME, port: PORT });
+const redisClient2 = new RedisClient2(redisConn2);
 const denoRedisConn = await denoRedis.connect({
   hostname: HOSTNAME,
   port: PORT,

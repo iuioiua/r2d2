@@ -131,9 +131,14 @@ export class RedisEncoderStream extends TransformStream<RedisCommand, string> {
     super({
       transform(command, controller) {
         const encodedCommand = command
-          .map((arg) => `$${String(arg).length}\r\n${arg}\r\n`)
+          .map((arg) => {
+            arg = arg.toString();
+            return BULK_STRING_PREFIX + arg.length + CRLF + arg + CRLF;
+          })
           .join("");
-        controller.enqueue(`*${command.length}\r\n${encodedCommand}`);
+        controller.enqueue(
+          ARRAY_PREFIX + command.length + CRLF + encodedCommand,
+        );
       },
     });
   }
@@ -156,7 +161,9 @@ export class RedisClient {
   }
 
   async read(): Promise<RedisReply> {
-    return await readReply(this.#reader);
+    const reply = await readReply(this.#reader);
+    this.#reader.releaseLock();
+    return reply;
   }
 
   async write(command: RedisCommand) {

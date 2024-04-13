@@ -79,10 +79,6 @@ export async function readReply(
       return value;
     case SIMPLE_ERROR_PREFIX:
       throw new RedisError(value);
-    case BULK_ERROR_PREFIX: {
-      const error = await readReply(reader) as string;
-      throw new RedisError(error);
-    }
     case INTEGER_PREFIX:
       return Number(value);
     case BULK_STRING_PREFIX:
@@ -107,6 +103,10 @@ export async function readReply(
       }
     case BIG_NUMBER_PREFIX:
       return BigInt(value);
+    case BULK_ERROR_PREFIX: {
+      const error = await readReply(reader) as string;
+      throw new RedisError(error);
+    }
     case VERBATIM_STRING_PREFIX:
       return await readReply(reader);
     case MAP_PREFIX: {

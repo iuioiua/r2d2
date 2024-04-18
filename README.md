@@ -1,6 +1,6 @@
 # r2d2
 
-[![Docs](https://doc.deno.land/badge.svg)](https://jsr.io/@iuioiua/r2d2)
+[![JSR](https://jsr.io/badges/@iuioiua/r2d2)](https://jsr.io/iuioiua/r2d2)
 [![CI](https://github.com/iuioiua/r2d2/actions/workflows/ci.yml/badge.svg)](https://github.com/iuioiua/r2d2/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/iuioiua/r2d2/branch/main/graph/badge.svg?token=8IDAVSL014)](https://codecov.io/gh/iuioiua/r2d2)
 

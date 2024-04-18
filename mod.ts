@@ -86,12 +86,8 @@ async function writeCommand(
   await writeAll(writer, createRequest(command));
 }
 
-function removePrefix(line: Uint8Array): string {
+function readTextValue(line: Uint8Array): string {
   return decoder.decode(line.slice(1));
-}
-
-function toObject(array: any[]): Record<string, any> {
-  return Object.fromEntries(chunk(array, 2));
 }
 
 async function readNReplies(
@@ -110,86 +106,17 @@ async function readArray(
   line: Uint8Array,
   iterator: AsyncIterableIterator<Uint8Array>,
 ): Promise<null | Reply[]> {
-  const length = readNumberOrDouble(line);
+  const length = Number(readTextValue(line));
   return length === -1 ? null : await readNReplies(length, iterator);
-}
-
-/**
- * Read but don't return attribute data.
- *
- * @todo include attribute data somehow
- */
-async function readAttribute(
-  line: Uint8Array,
-  iterator: AsyncIterableIterator<Uint8Array>,
-  raw = false,
-): Promise<null | Reply> {
-  await readMap(line, iterator);
-  return await readReply(iterator, raw);
-}
-
-function readBigNumber(line: Uint8Array): bigint {
-  return BigInt(removePrefix(line));
-}
-
-async function readBlobError(
-  iterator: AsyncIterableIterator<Uint8Array>,
-): Promise<never> {
-  /** Skip to reading the next line, which is a string */
-  const { value } = await iterator.next();
-  return await Promise.reject(decoder.decode(value));
-}
-
-function readBoolean(line: Uint8Array): boolean {
-  return removePrefix(line) === "t";
-}
-
-async function readBulkOrVerbatimString(
-  line: Uint8Array,
-  iterator: AsyncIterableIterator<Uint8Array>,
-  raw = false,
-): Promise<string | null> {
-  if (readNumberOrDouble(line) === -1) {
-    return null;
-  }
-  const { value } = await iterator.next();
-  return raw ? value : decoder.decode(value);
-}
-
-async function readError(line: Uint8Array): Promise<never> {
-  return await Promise.reject(removePrefix(line));
 }
 
 async function readMap(
   line: Uint8Array,
   iterator: AsyncIterableIterator<Uint8Array>,
-): Promise<Record<string, any>> {
-  const length = readNumberOrDouble(line) * 2;
+): Promise<Record<string, Reply>> {
+  const length = Number(readTextValue(line)) * 2;
   const array = await readNReplies(length, iterator);
-  return toObject(array);
-}
-
-function readNumberOrDouble(line: Uint8Array): number {
-  const number = removePrefix(line);
-  switch (number) {
-    case "inf":
-      return Infinity;
-    case "-inf":
-      return -Infinity;
-    default:
-      return Number(number);
-  }
-}
-
-async function readSet(
-  line: Uint8Array,
-  iterator: AsyncIterableIterator<Uint8Array>,
-): Promise<Set<Reply>> {
-  return new Set(await readArray(line, iterator));
-}
-
-function readSimpleString(line: Uint8Array): string {
-  return removePrefix(line);
+  return Object.fromEntries(chunk(array, 2));
 }
 
 /**
@@ -203,41 +130,71 @@ export async function readReply(
   iterator: AsyncIterableIterator<Uint8Array>,
   raw = false,
 ): Promise<Reply> {
-  const { value } = await iterator.next();
-  if (value.length === 0) {
+  const result = await iterator.next();
+  const line = result.value as Uint8Array;
+  if (line.length === 0) {
     return await Promise.reject(new TypeError("No reply received"));
   }
-  switch (value[0]) {
+  const prefix = line[0];
+  switch (prefix) {
     case ARRAY_PREFIX:
-    case PUSH_PREFIX:
-      return await readArray(value, iterator);
-    case ATTRIBUTE_PREFIX:
-      return await readAttribute(value, iterator);
-    case BIG_NUMBER_PREFIX:
-      return readBigNumber(value);
-    case BLOB_ERROR_PREFIX:
-      return readBlobError(iterator);
-    case BOOLEAN_PREFIX:
-      return readBoolean(value);
+    case PUSH_PREFIX: {
+      const value = readTextValue(line);
+      const length = Number(value);
+      return length === -1 ? null : await readNReplies(length, iterator);
+    }
+    /** @todo include attribute data somehow. */
+    case ATTRIBUTE_PREFIX: {
+      await readMap(line, iterator);
+      return await readReply(iterator, raw);
+    }
+    case BIG_NUMBER_PREFIX: {
+      const value = readTextValue(line);
+      return BigInt(value);
+    }
+    case BLOB_ERROR_PREFIX: {
+      /** Skip to reading the next line, which is a string */
+      const { value } = await iterator.next();
+      return await Promise.reject(decoder.decode(value));
+    }
+    case BOOLEAN_PREFIX: {
+      const value = readTextValue(line);
+      return value === "t";
+    }
     case BULK_STRING_PREFIX:
-    case VERBATIM_STRING_PREFIX:
-      return await readBulkOrVerbatimString(value, iterator, raw);
+    case VERBATIM_STRING_PREFIX: {
+      const value = readTextValue(line);
+      if (value === "-1") return null;
+      const result = await iterator.next();
+      return raw ? result.value : decoder.decode(result.value);
+    }
     case DOUBLE_PREFIX:
-    case INTEGER_PREFIX:
-      return readNumberOrDouble(value);
-    case ERROR_PREFIX:
-      return readError(value);
+    case INTEGER_PREFIX: {
+      const value = readTextValue(line);
+      switch (value) {
+        case "inf":
+          return Infinity;
+        case "-inf":
+          return -Infinity;
+        default:
+          return Number(line);
+      }
+    }
+    case ERROR_PREFIX: {
+      const value = readTextValue(line);
+      return await Promise.reject(value);
+    }
     case MAP_PREFIX:
-      return await readMap(value, iterator);
+      return await readMap(line, iterator);
     case NULL_PREFIX:
       return null;
     case SET_PREFIX:
-      return await readSet(value, iterator);
+      return new Set(await readArray(line, iterator));
     case SIMPLE_STRING_PREFIX:
-      return readSimpleString(value);
+      return readTextValue(line);
     /** No prefix */
     default:
-      return decoder.decode(value);
+      return decoder.decode(line);
   }
 }
 

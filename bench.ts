@@ -45,13 +45,13 @@ Deno.bench({
   name: "r2d2 x",
   baseline: true,
   async fn() {
-    await redisClient2.command(["PING"]);
+    await redisClient2.sendCommand(["PING"]);
 
-    await redisClient2.command(["SET", "mykey", "Hello"]);
-    await redisClient2.command(["GET", "mykey"]);
+    await redisClient2.sendCommand(["SET", "mykey", "Hello"]);
+    await redisClient2.sendCommand(["GET", "mykey"]);
 
-    await redisClient2.command(["HSET", "hash", "a", "foo", "b", "bar"]);
-    await redisClient2.command(["HGETALL", "hash"]);
+    await redisClient2.sendCommand(["HSET", "hash", "a", "foo", "b", "bar"]);
+    await redisClient2.sendCommand(["HGETALL", "hash"]);
 
     await redisClient2.pipeline([
       ["INCR", "X"],

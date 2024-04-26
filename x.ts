@@ -126,7 +126,7 @@ export async function readReply(
 
 export type RedisCommand = (string | number)[];
 
-export class RedisEncoderStream extends TransformStream<RedisCommand, string> {
+class RedisEncoderStream extends TransformStream<RedisCommand, string> {
   constructor() {
     super({
       transform(command, controller) {
@@ -149,6 +149,21 @@ interface Conn {
   readonly writable: WritableStream<Uint8Array>;
 }
 
+// https://github.com/denoland/deno/issues/13142#issuecomment-1169072506
+class TextDecoderStream extends TransformStream<Uint8Array, string> {
+  constructor() {
+    const decoder = new TextDecoder();
+    super({
+      transform(chunk, controller) {
+        controller.enqueue(decoder.decode(chunk));
+      },
+      flush(controller: TransformStreamDefaultController) {
+        controller.enqueue(decoder.decode());
+      },
+    });
+  }
+}
+
 export class RedisClient {
   #reader: ReadableStreamDefaultReader<string>;
   #writable: WritableStream<Uint8Array>;
@@ -156,30 +171,30 @@ export class RedisClient {
   constructor(conn: Conn) {
     this.#reader = conn.readable
       .pipeThrough(new TextDecoderStream())
+      .pipeThrough(new RedisLineStream())
       .getReader();
     this.#writable = conn.writable;
   }
 
-  async read(): Promise<RedisReply> {
-    const reply = await readReply(this.#reader);
-    this.#reader.releaseLock();
-    return reply;
+  async readReply(): Promise<RedisReply> {
+    return await readReply(this.#reader);
   }
 
-  async write(command: RedisCommand) {
-    await ReadableStream.from(command)
+  async writeCommand(command: RedisCommand) {
+    await ReadableStream.from([command])
+      .pipeThrough(new RedisEncoderStream())
       .pipeThrough(new TextEncoderStream())
-      .pipeTo(this.#writable);
+      .pipeTo(this.#writable, { preventClose: true });
   }
 
-  async command(command: RedisCommand): Promise<RedisReply> {
-    await this.write(command);
-    return await this.read();
+  async sendCommand(command: RedisCommand): Promise<RedisReply> {
+    await this.writeCommand(command);
+    return await this.readReply();
   }
 
   async pipeline(commands: RedisCommand[]): Promise<RedisReply[]> {
     for (const command of commands) {
-      await this.write(command);
+      await this.writeCommand(command);
     }
     return await readReplies(this.#reader, commands.length);
   }

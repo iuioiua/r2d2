@@ -1,7 +1,7 @@
 import {
   readReply,
+  RedisClient,
   type RedisCommand,
-  RedisEncoderStream,
   RedisError,
   RedisLineStream,
   type RedisReply,
@@ -133,17 +133,75 @@ Deno.test("readReply() push", async () => {
   );
 });
 
-Deno.test("RedisEncoderStream", async () => {
-  const stream = ReadableStream.from<RedisCommand>([
-    ["SET", "key", 42],
-    ["GET", "key"],
-    ["INCR", "counter"],
-  ]).pipeThrough(new RedisEncoderStream());
-  const actual = await Array.fromAsync(stream);
-  const expected = [
-    "*3\r\n$3\r\nSET\r\n$3\r\nkey\r\n$2\r\n42\r\n",
-    "*2\r\n$3\r\nGET\r\n$3\r\nkey\r\n",
-    "*2\r\n$4\r\nINCR\r\n$7\r\ncounter\r\n",
-  ];
-  assertEquals(actual, expected);
+const HOSTNAME = "127.0.0.1";
+const PORT = 6379;
+const redisConn = await Deno.connect({ hostname: HOSTNAME, port: PORT });
+const redisClient = new RedisClient(redisConn);
+
+async function assertSendCommandEquals(
+  command: RedisCommand,
+  expected: RedisReply,
+): Promise<void> {
+  assertEquals<RedisReply>(await redisClient.sendCommand(command), expected);
+}
+
+Deno.test("RedisClient.sendCommand() transactions", async () => {
+  await assertSendCommandEquals(["MULTI"], "OK");
+  await assertSendCommandEquals(["INCR", "FOO"], "QUEUED");
+  await assertSendCommandEquals(["INCR", "BAR"], "QUEUED");
+  await assertSendCommandEquals(["EXEC"], [1, 1]);
 });
+
+/* Deno.test("RedisClient.sendCommand() eval script", async () => {
+  await assertSendCommandEquals("EVAL return ARGV[1] 0 hello", "hello");
+}); */
+
+Deno.test("redisClient.sendCommand() Lua script", async () => {
+  await assertSendCommandEquals([
+    "FUNCTION",
+    "LOAD",
+    "#!lua name=mylib\nredis.register_function('knockknock', function() return 'Who\\'s there?' end)",
+  ], "mylib");
+  await assertSendCommandEquals(["FCALL", "knockknock", 0], "Who's there?");
+});
+
+Deno.test("redisClient.sendCommand() RESP3", async () => {
+  await redisClient.sendCommand(["HELLO", 3]);
+  await assertSendCommandEquals(["HSET", "hash3", "foo", 1, "bar", 2], 2);
+  await assertSendCommandEquals(["HGETALL", "hash3"], {
+    foo: "1",
+    bar: "2",
+  });
+});
+
+/* Deno.test("redisClient.sendCommand() race condition", async () => {
+  async function fn() {
+    const key = crypto.randomUUID();
+    const value = crypto.randomUUID();
+    await redisClient.sendCommand(["SET", key, value]);
+    const result = await redisClient.sendCommand(["GET", key]);
+    assertEquals(result, value);
+  }
+
+  await Promise.all([
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+    fn(),
+  ]);
+}); */

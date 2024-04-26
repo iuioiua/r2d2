@@ -59,10 +59,6 @@ const SET_PREFIX = "~".charCodeAt(0);
 const SIMPLE_STRING_PREFIX = "+".charCodeAt(0);
 const VERBATIM_STRING_PREFIX = "=".charCodeAt(0);
 
-const STREAMED_REPLY_START_DELIMITER = "?".charCodeAt(0);
-const STREAMED_STRING_END_DELIMITER = ";0";
-const STREAMED_AGGREGATE_END_DELIMITER = ".";
-
 /**
  * Transforms a command, which is an array of arguments, into an RESP request.
  *
@@ -94,10 +90,6 @@ function removePrefix(line: Uint8Array): string {
   return decoder.decode(line.slice(1));
 }
 
-function isSteamedReply(line: Uint8Array): boolean {
-  return line[1] === STREAMED_REPLY_START_DELIMITER;
-}
-
 function toObject(array: any[]): Record<string, any> {
   return Object.fromEntries(chunk(array, 2));
 }
@@ -110,22 +102,6 @@ async function readNReplies(
   const replies: Reply[] = [];
   for (let i = 0; i < length; i++) {
     replies.push(await readReply(iterator, raw));
-  }
-  return replies;
-}
-
-async function readStreamedReply(
-  delimiter: string,
-  iterator: AsyncIterableIterator<Uint8Array>,
-  raw = false,
-): Promise<Reply[]> {
-  const replies: Reply[] = [];
-  while (true) {
-    const reply = await readReply(iterator, raw);
-    if (reply === delimiter) {
-      break;
-    }
-    replies.push(reply);
   }
   return replies;
 }
@@ -216,37 +192,6 @@ function readSimpleString(line: Uint8Array): string {
   return removePrefix(line);
 }
 
-async function readStreamedArray(
-  iterator: AsyncIterableIterator<Uint8Array>,
-): Promise<Reply[]> {
-  return await readStreamedReply(STREAMED_AGGREGATE_END_DELIMITER, iterator);
-}
-
-async function readStreamedMap(
-  iterator: AsyncIterableIterator<Uint8Array>,
-): Promise<Record<string, any>> {
-  const array = await readStreamedReply(
-    STREAMED_AGGREGATE_END_DELIMITER,
-    iterator,
-  );
-  return toObject(array);
-}
-
-async function readStreamedSet(
-  iterator: AsyncIterableIterator<Uint8Array>,
-): Promise<Set<Reply>> {
-  return new Set(await readStreamedArray(iterator));
-}
-
-async function readStreamedString(
-  iterator: AsyncIterableIterator<Uint8Array>,
-): Promise<string> {
-  return (await readStreamedReply(STREAMED_STRING_END_DELIMITER, iterator))
-    /** Remove byte counts */
-    .filter((line) => !(line as string).startsWith(";"))
-    .join("");
-}
-
 /**
  * Reads and processes the response line-by-line. Exported for testing.
  *
@@ -265,9 +210,7 @@ export async function readReply(
   switch (value[0]) {
     case ARRAY_PREFIX:
     case PUSH_PREFIX:
-      return isSteamedReply(value)
-        ? await readStreamedArray(iterator)
-        : await readArray(value, iterator);
+      return await readArray(value, iterator);
     case ATTRIBUTE_PREFIX:
       return await readAttribute(value, iterator);
     case BIG_NUMBER_PREFIX:
@@ -278,24 +221,18 @@ export async function readReply(
       return readBoolean(value);
     case BULK_STRING_PREFIX:
     case VERBATIM_STRING_PREFIX:
-      return isSteamedReply(value)
-        ? await readStreamedString(iterator)
-        : await readBulkOrVerbatimString(value, iterator, raw);
+      return await readBulkOrVerbatimString(value, iterator, raw);
     case DOUBLE_PREFIX:
     case INTEGER_PREFIX:
       return readNumberOrDouble(value);
     case ERROR_PREFIX:
       return readError(value);
     case MAP_PREFIX:
-      return isSteamedReply(value)
-        ? await readStreamedMap(iterator)
-        : await readMap(value, iterator);
+      return await readMap(value, iterator);
     case NULL_PREFIX:
       return null;
     case SET_PREFIX:
-      return isSteamedReply(value)
-        ? await readStreamedSet(iterator)
-        : await readSet(value, iterator);
+      return await readSet(value, iterator);
     case SIMPLE_STRING_PREFIX:
       return readSimpleString(value);
     /** No prefix */

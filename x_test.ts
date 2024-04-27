@@ -138,6 +138,8 @@ const PORT = 6379;
 const redisConn = await Deno.connect({ hostname: HOSTNAME, port: PORT });
 const redisClient = new RedisClient(redisConn);
 
+await redisClient.sendCommand(["FLUSHALL"]);
+
 async function assertSendCommandEquals(
   command: RedisCommand,
   expected: RedisReply,
@@ -152,9 +154,12 @@ Deno.test("RedisClient.sendCommand() transactions", async () => {
   await assertSendCommandEquals(["EXEC"], [1, 1]);
 });
 
-/* Deno.test("RedisClient.sendCommand() eval script", async () => {
-  await assertSendCommandEquals("EVAL return ARGV[1] 0 hello", "hello");
-}); */
+Deno.test("RedisClient.sendCommand() eval script", async () => {
+  await assertSendCommandEquals(
+    ["EVAL", "return ARGV[1]", 0, "hello"],
+    "hello",
+  );
+});
 
 Deno.test("redisClient.sendCommand() Lua script", async () => {
   await assertSendCommandEquals([
@@ -174,7 +179,7 @@ Deno.test("redisClient.sendCommand() RESP3", async () => {
   });
 });
 
-/* Deno.test("redisClient.sendCommand() race condition", async () => {
+Deno.test("redisClient.sendCommand() race condition", async () => {
   async function fn() {
     const key = crypto.randomUUID();
     const value = crypto.randomUUID();
@@ -204,4 +209,26 @@ Deno.test("redisClient.sendCommand() RESP3", async () => {
     fn(),
     fn(),
   ]);
+});
+
+Deno.test("redisClient.pipelineCommands()", async () => {
+  assertEquals(
+    await redisClient.pipeline([
+      ["INCR", "X"],
+      ["INCR", "X"],
+      ["INCR", "X"],
+      ["INCR", "X"],
+    ]),
+    [1, 2, 3, 4],
+  );
+});
+
+/* Deno.test("redisClient.sendCommand() - no reply", async () => {
+  await assertRejects(
+    async () => await redisClient.sendCommand(["SHUTDOWN"]),
+    RedisError,
+    "No reply received",
+  );
 }); */
+
+// addEventListener("unload", () => redisConn.close());

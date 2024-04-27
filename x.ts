@@ -144,6 +144,26 @@ class RedisEncoderStream extends TransformStream<RedisCommand, string> {
   }
 }
 
+async function sendCommand(
+  writable: WritableStream<Uint8Array>,
+  reader: ReadableStreamDefaultReader<string>,
+  command: RedisCommand,
+) {
+  await writeCommand(writable, command);
+  return await readReply(reader);
+}
+
+async function pipeline(
+  writable: WritableStream<Uint8Array>,
+  reader: ReadableStreamDefaultReader<string>,
+  commands: RedisCommand[],
+): Promise<RedisReply[]> {
+  for (const command of commands) {
+    await writeCommand(writable, command);
+  }
+  return await readReplies(reader, commands.length);
+}
+
 interface Conn {
   readonly readable: ReadableStream<Uint8Array>;
   readonly writable: WritableStream<Uint8Array>;
@@ -164,9 +184,21 @@ class TextDecoderStream extends TransformStream<Uint8Array, string> {
   }
 }
 
+async function writeCommand(
+  writable: WritableStream<Uint8Array>,
+  command: RedisCommand,
+) {
+  await ReadableStream.from([command])
+    .pipeThrough(new RedisEncoderStream())
+    .pipeThrough(new TextEncoderStream())
+    .pipeTo(writable, { preventClose: true });
+}
+
 export class RedisClient {
   #reader: ReadableStreamDefaultReader<string>;
   #writable: WritableStream<Uint8Array>;
+  // deno-lint-ignore no-explicit-any
+  #queue: Promise<any>;
 
   constructor(conn: Conn) {
     this.#reader = conn.readable
@@ -174,28 +206,33 @@ export class RedisClient {
       .pipeThrough(new RedisLineStream())
       .getReader();
     this.#writable = conn.writable;
+    this.#queue = Promise.resolve();
+  }
+
+  async #enqueue<T>(task: () => Promise<T>): Promise<T> {
+    this.#queue = this.#queue.then(task);
+    return await this.#queue;
   }
 
   async readReply(): Promise<RedisReply> {
-    return await readReply(this.#reader);
+    return await this.#enqueue(async () => await readReply(this.#reader));
   }
 
   async writeCommand(command: RedisCommand) {
-    await ReadableStream.from([command])
-      .pipeThrough(new RedisEncoderStream())
-      .pipeThrough(new TextEncoderStream())
-      .pipeTo(this.#writable, { preventClose: true });
+    await this.#enqueue(async () =>
+      await writeCommand(this.#writable, command)
+    );
   }
 
   async sendCommand(command: RedisCommand): Promise<RedisReply> {
-    await this.writeCommand(command);
-    return await this.readReply();
+    return await this.#enqueue(async () =>
+      await sendCommand(this.#writable, this.#reader, command)
+    );
   }
 
   async pipeline(commands: RedisCommand[]): Promise<RedisReply[]> {
-    for (const command of commands) {
-      await this.writeCommand(command);
-    }
-    return await readReplies(this.#reader, commands.length);
+    return await this.#enqueue(async () =>
+      await pipeline(this.#writable, this.#reader, commands)
+    );
   }
 }

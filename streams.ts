@@ -62,12 +62,12 @@ async function readReplies(
 ): Promise<RedisReply[]> {
   const replies: RedisReply[] = [];
   for (let i = 0; i < length; i++) {
-    replies.push(await readReply(reader));
+    replies.push(await read(reader));
   }
   return replies;
 }
 
-export async function readReply(
+export async function read(
   reader: ReadableStreamDefaultReader<string>,
 ): Promise<RedisReply> {
   const { value: line } = await reader.read();
@@ -82,7 +82,7 @@ export async function readReply(
     case INTEGER_PREFIX:
       return Number(value);
     case BULK_STRING_PREFIX:
-      return Number(value) === -1 ? null : await readReply(reader);
+      return Number(value) === -1 ? null : await read(reader);
     case PUSH_PREFIX:
     case ARRAY_PREFIX: {
       const length = Number(value);
@@ -104,11 +104,11 @@ export async function readReply(
     case BIG_NUMBER_PREFIX:
       return BigInt(value);
     case BULK_ERROR_PREFIX: {
-      const error = await readReply(reader) as string;
+      const error = await read(reader) as string;
       throw new RedisError(error);
     }
     case VERBATIM_STRING_PREFIX:
-      return await readReply(reader);
+      return await read(reader);
     case MAP_PREFIX: {
       const length = Number(value) * 2;
       const array = await readReplies(reader, length);
@@ -144,13 +144,13 @@ class RedisEncoderStream extends TransformStream<RedisCommand, string> {
   }
 }
 
-async function sendCommand(
+async function send(
   writable: WritableStream<Uint8Array>,
   reader: ReadableStreamDefaultReader<string>,
   command: RedisCommand,
 ) {
-  await writeCommand(writable, command);
-  return await readReply(reader);
+  await write(writable, command);
+  return await read(reader);
 }
 
 async function pipeline(
@@ -159,7 +159,7 @@ async function pipeline(
   commands: RedisCommand[],
 ): Promise<RedisReply[]> {
   for (const command of commands) {
-    await writeCommand(writable, command);
+    await write(writable, command);
   }
   return await readReplies(reader, commands.length);
 }
@@ -184,7 +184,7 @@ class TextDecoderStream extends TransformStream<Uint8Array, string> {
   }
 }
 
-async function writeCommand(
+async function write(
   writable: WritableStream<Uint8Array>,
   command: RedisCommand,
 ) {
@@ -215,18 +215,16 @@ export class RedisClient {
   }
 
   async read(): Promise<RedisReply> {
-    return await this.#enqueue(async () => await readReply(this.#reader));
+    return await this.#enqueue(async () => await read(this.#reader));
   }
 
   async write(command: RedisCommand) {
-    await this.#enqueue(async () =>
-      await writeCommand(this.#writable, command)
-    );
+    await this.#enqueue(async () => await write(this.#writable, command));
   }
 
   async send(command: RedisCommand): Promise<RedisReply> {
     return await this.#enqueue(async () =>
-      await sendCommand(this.#writable, this.#reader, command)
+      await send(this.#writable, this.#reader, command)
     );
   }
 
@@ -238,7 +236,7 @@ export class RedisClient {
 
   async *listen(): AsyncIterableIterator<RedisReply> {
     while (true) {
-      yield await this.read();
+      yield await read(this.#reader);
     }
   }
 }

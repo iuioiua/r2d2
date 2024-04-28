@@ -5,7 +5,7 @@ import {
   RedisError,
   RedisLineStream,
   type RedisReply,
-} from "./x.ts";
+} from "./streams.ts";
 import { assertEquals, assertRejects } from "@std/assert";
 
 async function assertReplyEquals(
@@ -138,53 +138,59 @@ const PORT = 6379;
 const redisConn = await Deno.connect({ hostname: HOSTNAME, port: PORT });
 const redisClient = new RedisClient(redisConn);
 
-await redisClient.sendCommand(["FLUSHALL"]);
+await redisClient.send(["FLUSHALL"]);
 
-async function assertSendCommandEquals(
+async function assertsendEquals(
   command: RedisCommand,
   expected: RedisReply,
 ): Promise<void> {
-  assertEquals<RedisReply>(await redisClient.sendCommand(command), expected);
+  assertEquals<RedisReply>(await redisClient.send(command), expected);
 }
 
-Deno.test("RedisClient.sendCommand() transactions", async () => {
-  await assertSendCommandEquals(["MULTI"], "OK");
-  await assertSendCommandEquals(["INCR", "FOO"], "QUEUED");
-  await assertSendCommandEquals(["INCR", "BAR"], "QUEUED");
-  await assertSendCommandEquals(["EXEC"], [1, 1]);
+Deno.test("RedisClient.send() transactions", async () => {
+  await assertsendEquals(["MULTI"], "OK");
+  await assertsendEquals(["INCR", "FOO"], "QUEUED");
+  await assertsendEquals(["INCR", "BAR"], "QUEUED");
+  await assertsendEquals(["EXEC"], [1, 1]);
 });
 
-Deno.test("RedisClient.sendCommand() eval script", async () => {
-  await assertSendCommandEquals(
+/* Deno.test("redisClient.send() - raw data", async () => {
+  const data = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assertEquals(await redisClient.send(["SET", "binary", data]), "OK");
+  assertEquals(await redisClient.send(["GET", "binary"], true), data);
+}); */
+
+Deno.test("RedisClient.send() eval script", async () => {
+  await assertsendEquals(
     ["EVAL", "return ARGV[1]", 0, "hello"],
     "hello",
   );
 });
 
-Deno.test("redisClient.sendCommand() Lua script", async () => {
-  await assertSendCommandEquals([
+Deno.test("redisClient.send() Lua script", async () => {
+  await assertsendEquals([
     "FUNCTION",
     "LOAD",
     "#!lua name=mylib\nredis.register_function('knockknock', function() return 'Who\\'s there?' end)",
   ], "mylib");
-  await assertSendCommandEquals(["FCALL", "knockknock", 0], "Who's there?");
+  await assertsendEquals(["FCALL", "knockknock", 0], "Who's there?");
 });
 
-Deno.test("redisClient.sendCommand() RESP3", async () => {
-  await redisClient.sendCommand(["HELLO", 3]);
-  await assertSendCommandEquals(["HSET", "hash3", "foo", 1, "bar", 2], 2);
-  await assertSendCommandEquals(["HGETALL", "hash3"], {
+Deno.test("redisClient.send() RESP3", async () => {
+  await redisClient.send(["HELLO", 3]);
+  await assertsendEquals(["HSET", "hash3", "foo", 1, "bar", 2], 2);
+  await assertsendEquals(["HGETALL", "hash3"], {
     foo: "1",
     bar: "2",
   });
 });
 
-Deno.test("redisClient.sendCommand() race condition", async () => {
+Deno.test("redisClient.send() race condition", async () => {
   async function fn() {
     const key = crypto.randomUUID();
     const value = crypto.randomUUID();
-    await redisClient.sendCommand(["SET", key, value]);
-    const result = await redisClient.sendCommand(["GET", key]);
+    await redisClient.send(["SET", key, value]);
+    const result = await redisClient.send(["GET", key]);
     assertEquals(result, value);
   }
 
@@ -211,7 +217,7 @@ Deno.test("redisClient.sendCommand() race condition", async () => {
   ]);
 });
 
-Deno.test("redisClient.pipelineCommands()", async () => {
+Deno.test("redisClient.pipeline()", async () => {
   assertEquals(
     await redisClient.pipeline([
       ["INCR", "X"],
@@ -223,12 +229,26 @@ Deno.test("redisClient.pipelineCommands()", async () => {
   );
 });
 
-/* Deno.test("redisClient.sendCommand() - no reply", async () => {
+Deno.test("redisClient.write() + redisClient.read()", async () => {
+  await redisClient.write(["SUBSCRIBE", "mychannel"]);
+  const iterator = redisClient.listen();
+  assertEquals(await iterator.next(), {
+    value: ["subscribe", "mychannel", 1],
+    done: false,
+  });
+  await redisClient.write(["UNSUBSCRIBE"]);
+  assertEquals(await iterator.next(), {
+    value: ["unsubscribe", "mychannel", 0],
+    done: false,
+  });
+});
+
+Deno.test("redisClient.send() - no reply", async () => {
   await assertRejects(
-    async () => await redisClient.sendCommand(["SHUTDOWN"]),
+    async () => await redisClient.send(["SHUTDOWN"]),
     RedisError,
     "No reply received",
   );
-}); */
+});
 
-// addEventListener("unload", () => redisConn.close());
+addEventListener("unload", () => redisConn.close());

@@ -214,17 +214,17 @@ export class RedisClient {
     return await this.#queue;
   }
 
-  async readReply(): Promise<RedisReply> {
+  async read(): Promise<RedisReply> {
     return await this.#enqueue(async () => await readReply(this.#reader));
   }
 
-  async writeCommand(command: RedisCommand) {
+  async write(command: RedisCommand) {
     await this.#enqueue(async () =>
       await writeCommand(this.#writable, command)
     );
   }
 
-  async sendCommand(command: RedisCommand): Promise<RedisReply> {
+  async send(command: RedisCommand): Promise<RedisReply> {
     return await this.#enqueue(async () =>
       await sendCommand(this.#writable, this.#reader, command)
     );
@@ -234,5 +234,11 @@ export class RedisClient {
     return await this.#enqueue(async () =>
       await pipeline(this.#writable, this.#reader, commands)
     );
+  }
+
+  async *listen(): AsyncIterableIterator<RedisReply> {
+    while (true) {
+      yield await this.read();
+    }
   }
 }

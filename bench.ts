@@ -2,7 +2,7 @@ import * as denoRedis from "https://deno.land/x/redis@v0.32.2/mod.ts";
 import { Redis } from "npm:ioredis@5.3.2";
 import { createClient } from "npm:redis@4.6.13";
 import { RedisClient } from "./mod.ts";
-import { RedisClient as RedisClient2 } from "./x.ts";
+import { RedisClient as RedisClient2 } from "./streams.ts";
 
 const HOSTNAME = "127.0.0.1";
 const PORT = 6379;
@@ -45,13 +45,13 @@ Deno.bench({
   name: "r2d2 x",
   baseline: true,
   async fn() {
-    await redisClient2.sendCommand(["PING"]);
+    await redisClient2.send(["PING"]);
 
-    await redisClient2.sendCommand(["SET", "mykey", "Hello"]);
-    await redisClient2.sendCommand(["GET", "mykey"]);
+    await redisClient2.send(["SET", "mykey", "Hello"]);
+    await redisClient2.send(["GET", "mykey"]);
 
-    await redisClient2.sendCommand(["HSET", "hash", "a", "foo", "b", "bar"]);
-    await redisClient2.sendCommand(["HGETALL", "hash"]);
+    await redisClient2.send(["HSET", "hash", "a", "foo", "b", "bar"]);
+    await redisClient2.send(["HGETALL", "hash"]);
 
     await redisClient2.pipeline([
       ["INCR", "X"],

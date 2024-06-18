@@ -161,8 +161,11 @@ async function sendCommandTest(
 
 Deno.test("redisClient.sendCommand() - transactions", async () => {
   await sendCommandTest(["MULTI"], "OK");
+  console.log(1);
   await sendCommandTest(["INCR", "FOO"], "QUEUED");
+  console.log(1);
   await sendCommandTest(["INCR", "BAR"], "QUEUED");
+  console.log(1);
   await sendCommandTest(["EXEC"], [1, 1]);
 });
 

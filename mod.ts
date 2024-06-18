@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { chunk } from "@std/collections/chunk";
 import { concat } from "@std/bytes/concat";
-import { readDelim } from "@std/io/read_delim";
+import { readLines } from "./read_delim.ts";
 import { writeAll } from "@std/io/write_all";
 import type { Writer } from "@std/io/types";
 
@@ -248,7 +248,7 @@ async function sendCommand(
   raw = false,
 ): Promise<Reply> {
   await writeCommand(redisConn, command);
-  return await readReply(readDelim(redisConn, CRLF_RAW), raw);
+  return await readReply(readLines(redisConn), raw);
 }
 
 async function pipelineCommands(
@@ -257,14 +257,14 @@ async function pipelineCommands(
 ): Promise<Reply[]> {
   const bytes = commands.map(createRequest);
   await writeAll(redisConn, concat(bytes));
-  return readNReplies(commands.length, readDelim(redisConn, CRLF_RAW));
+  return readNReplies(commands.length, readLines(redisConn));
 }
 
 async function* readReplies(
   redisConn: Deno.Conn,
   raw = false,
 ): AsyncIterableIterator<Reply> {
-  const iterator = readDelim(redisConn, CRLF_RAW);
+  const iterator = readLines(redisConn);
   while (true) {
     yield await readReply(iterator, raw);
   }

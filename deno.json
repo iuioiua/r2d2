@@ -1,7 +1,10 @@
 {
   "name": "@iuioiua/r2d2",
   "version": "2.1.1",
-  "exports": "./mod.ts",
+  "exports": {
+    ".": "./mod.ts",
+    "./streams": "./streams.ts"
+  },
   "imports": {
     "@std/assert": "jsr:@std/assert@^0.220.1",
     "@std/bytes": "jsr:@std/bytes@^0.220.1",
@@ -12,7 +15,7 @@
   },
   "tasks": {
     "redis:start": "redis-server --save \"\" --appendonly no --daemonize yes",
-    "test": "deno test --allow-net --trace-leaks --coverage --doc --parallel",
+    "test": "deno test --allow-net --trace-leaks --coverage --doc --parallel streams_test.ts",
     "test:dev": "deno task redis:start && deno task test || redis-cli SHUTDOWN",
     "bench": "deno bench --allow-net --allow-env",
     "bench:dev": "deno task redis:start && deno task bench",

@@ -270,15 +270,6 @@ async function* readReplies(
   }
 }
 
-class AsyncQueue {
-  #queue: Promise<any> = Promise.resolve();
-
-  async enqueue<T>(task: () => Promise<T>): Promise<T> {
-    this.#queue = this.#queue.then(task);
-    return await this.#queue;
-  }
-}
-
 /**
  * A Redis client that can be used to send commands to a Redis server.
  *
@@ -298,12 +289,17 @@ class AsyncQueue {
  */
 export class RedisClient {
   #conn: Deno.TcpConn | Deno.TlsConn;
-  #queue: AsyncQueue;
+  #queue: Promise<any>;
 
   /** Constructs a new instance. */
   constructor(conn: Deno.TcpConn | Deno.TlsConn) {
     this.#conn = conn;
-    this.#queue = new AsyncQueue();
+    this.#queue = Promise.resolve();
+  }
+
+  async #enqueue<T>(task: () => Promise<T>): Promise<T> {
+    this.#queue = this.#queue.then(task);
+    return await this.#queue;
   }
 
   /**
@@ -324,7 +320,7 @@ export class RedisClient {
    * ```
    */
   async sendCommand(command: Command, raw = false): Promise<Reply> {
-    return await this.#queue.enqueue(
+    return await this.#enqueue(
       async () => await sendCommand(this.#conn, command, raw),
     );
   }
@@ -343,7 +339,7 @@ export class RedisClient {
    * ```
    */
   async writeCommand(command: Command) {
-    await this.#queue.enqueue(
+    await this.#enqueue(
       async () => await writeCommand(this.#conn, command),
     );
   }
@@ -390,7 +386,7 @@ export class RedisClient {
    * ```
    */
   async pipelineCommands(commands: Command[]): Promise<Reply[]> {
-    return await this.#queue.enqueue(
+    return await this.#enqueue(
       async () => await pipelineCommands(this.#conn, commands),
     );
   }

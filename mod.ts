@@ -3,6 +3,7 @@ import { chunk } from "@std/collections/chunk";
 import { concat } from "@std/bytes/concat";
 import { readDelim } from "@std/io/read_delim";
 import { writeAll } from "@std/io/write_all";
+import type { Writer } from "@std/io/types";
 
 /**
  * A Redis client that can be used to send commands to a Redis server.
@@ -80,7 +81,7 @@ function createRequest(command: Command): Uint8Array {
 }
 
 async function writeCommand(
-  writer: Deno.Writer,
+  writer: Writer,
   command: Command,
 ): Promise<void> {
   await writeAll(writer, createRequest(command));

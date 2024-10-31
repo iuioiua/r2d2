@@ -126,7 +126,7 @@ export async function read(
 
 export type RedisCommand = (string | number)[];
 
-class RedisEncoderStream extends TransformStream<RedisCommand, string> {
+class RedisSerializationStream extends TransformStream<RedisCommand, string> {
   constructor() {
     super({
       transform(command, controller) {
@@ -187,7 +187,7 @@ async function write(
   commands: RedisCommand[],
 ) {
   await ReadableStream.from(commands)
-    .pipeThrough(new RedisEncoderStream())
+    .pipeThrough(new RedisSerializationStream())
     .pipeThrough(new TextEncoderStream())
     .pipeTo(writable, { preventClose: true });
 }

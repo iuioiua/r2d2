@@ -8,7 +8,7 @@ import type { Writer } from "@std/io/types";
 /**
  * A Redis client that can be used to send commands to a Redis server.
  *
- * ```ts
+ * ```ts ignore
  * import { RedisClient } from "jsr:@iuioiua/r2d2";
  *
  * const redisConn = await Deno.connect({ port: 6379 });
@@ -283,7 +283,7 @@ class AsyncQueue {
  * A Redis client that can be used to send commands to a Redis server.
  *
  * @example
- * ```ts
+ * ```ts ignore
  * import { RedisClient } from "jsr:@iuioiua/r2d2";
  *
  * const redisConn = await Deno.connect({ port: 6379 });
@@ -310,7 +310,7 @@ export class RedisClient {
    * Sends a command to the Redis server and returns the parsed reply.
    *
    * @example
-   * ```ts
+   * ```ts ignore
    * import { RedisClient } from "jsr:@iuioiua/r2d2";
    *
    * const redisConn = await Deno.connect({ port: 6379 });
@@ -333,7 +333,7 @@ export class RedisClient {
    * Just writes a command to the Redis server without listening for a reply.
    *
    * @example
-   * ```ts
+   * ```ts ignore
    * import { RedisClient } from "jsr:@iuioiua/r2d2";
    *
    * const redisConn = await Deno.connect({ port: 6379 });
@@ -352,7 +352,7 @@ export class RedisClient {
    * Used for pub/sub. Listens for replies from the Redis server.
    *
    * @example
-   * ```ts
+   * ```ts ignore
    * import { RedisClient } from "jsr:@iuioiua/r2d2";
    *
    * const redisConn = await Deno.connect({ port: 6379 });
@@ -374,7 +374,7 @@ export class RedisClient {
    * Pipelines commands to the Redis server and returns the parsed replies.
    *
    * @example
-   * ```ts
+   * ```ts ignore
    * import { RedisClient } from "jsr:@iuioiua/r2d2";
    *
    * const redisConn = await Deno.connect({ port: 6379 });

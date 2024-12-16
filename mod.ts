@@ -1,9 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import { chunk } from "@std/collections/chunk";
 import { concat } from "@std/bytes/concat";
-import { readDelim } from "@std/io/read_delim";
 import { writeAll } from "@std/io/write_all";
-import type { Writer } from "@std/io/types";
+import type { Reader, Writer } from "@std/io/types";
 
 /**
  * A Redis client that can be used to send commands to a Redis server.
@@ -89,6 +88,56 @@ async function writeCommand(
   command: Command,
 ): Promise<void> {
   await writeAll(writer, createRequest(command));
+}
+
+const DELIM_LPS = new Uint8Array([0, 0]);
+
+async function* readLine(reader: Reader): AsyncIterableIterator<Uint8Array> {
+  // Avoid unicode problems
+  let chunks = new Uint8Array();
+  const bufSize = Math.max(1024, DELIM_LPS.length + 1);
+
+  // Modified KMP
+  let inspectIndex = 0;
+  let matchIndex = 0;
+  while (true) {
+    const inspectArr = new Uint8Array(bufSize);
+    const result = await reader.read(inspectArr);
+    if (result === null) {
+      // Yield last chunk.
+      yield chunks;
+      return;
+    } else if (result < 0) {
+      // Discard all remaining and silently fail.
+      return;
+    }
+    chunks = concat([chunks, inspectArr.slice(0, result)]);
+    let localIndex = 0;
+    while (inspectIndex < chunks.length) {
+      if (inspectArr[localIndex] === CRLF[matchIndex]) {
+        inspectIndex++;
+        localIndex++;
+        matchIndex++;
+        if (matchIndex === DELIM_LPS.length) {
+          // Full match
+          const matchEnd = inspectIndex - DELIM_LPS.length;
+          const readyBytes = chunks.slice(0, matchEnd);
+          yield readyBytes;
+          // Reset match, different from KMP.
+          chunks = chunks.slice(inspectIndex);
+          inspectIndex = 0;
+          matchIndex = 0;
+        }
+      } else {
+        if (matchIndex === 0) {
+          inspectIndex++;
+          localIndex++;
+        } else {
+          matchIndex = DELIM_LPS[matchIndex - 1]!;
+        }
+      }
+    }
+  }
 }
 
 function readNReplies(
@@ -184,7 +233,7 @@ async function sendCommand(
   raw = false,
 ): Promise<Reply> {
   await writeCommand(redisConn, command);
-  return readReply(readDelim(redisConn, CRLF), raw);
+  return readReply(readLine(redisConn), raw);
 }
 
 async function pipelineCommands(
@@ -193,14 +242,14 @@ async function pipelineCommands(
 ): Promise<Reply[]> {
   const bytes = commands.map(createRequest);
   await writeAll(redisConn, concat(bytes));
-  return readNReplies(commands.length, readDelim(redisConn, CRLF));
+  return readNReplies(commands.length, readLine(redisConn));
 }
 
 async function* readReplies(
   redisConn: Deno.Conn,
   raw = false,
 ): AsyncIterableIterator<Reply> {
-  const iterator = readDelim(redisConn, CRLF);
+  const iterator = readLine(redisConn);
   while (true) {
     yield await readReply(iterator, raw);
   }

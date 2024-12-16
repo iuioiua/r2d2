@@ -91,16 +91,12 @@ async function writeCommand(
   await writeAll(writer, createRequest(command));
 }
 
-async function readNReplies(
+function readNReplies(
   length: number,
   iterator: AsyncIterableIterator<Uint8Array>,
   raw = false,
 ): Promise<Reply[]> {
-  const replies: Reply[] = [];
-  for (let i = 0; i < length; i++) {
-    replies.push(await readReply(iterator, raw));
-  }
-  return replies;
+  return Array.fromAsync({ length }, () => readReply(iterator, raw));
 }
 
 /**

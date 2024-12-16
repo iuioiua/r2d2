@@ -95,18 +95,17 @@ const DELIM_LPS = new Uint8Array([0, 0]);
 async function* readLine(reader: Reader): AsyncIterableIterator<Uint8Array> {
   // Avoid unicode problems
   let chunks = new Uint8Array();
-  const bufSize = Math.max(1024);
 
   // Modified KMP
   let inspectIndex = 0;
   let matchIndex = 0;
   while (true) {
-    const inspectArr = new Uint8Array(bufSize);
+    const inspectArr = new Uint8Array(1024);
     const result = await reader.read(inspectArr);
     if (result === null) {
       // Yield last chunk.
       yield chunks;
-      return;
+      break;
     }
     chunks = concat([chunks, inspectArr.slice(0, result)]);
     let localIndex = 0;

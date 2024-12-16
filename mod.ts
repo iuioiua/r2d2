@@ -92,7 +92,16 @@ async function writeCommand(
 
 const DELIM_LPS = new Uint8Array([0, 0]);
 
-async function* readLine(reader: Reader): AsyncIterableIterator<Uint8Array> {
+/**
+ * Reads and processes the response line-by-line. Exported for testing.
+ *
+ * @see {@link https://github.com/redis/redis-specifications/blob/master/protocol/RESP3.md}
+ *
+ * @private
+ */
+export async function* readLines(
+  reader: Reader,
+): AsyncIterableIterator<Uint8Array> {
   let chunks = new Uint8Array();
 
   // Modified KMP
@@ -142,7 +151,7 @@ function readNReplies(
 }
 
 /**
- * Reads and processes the response line-by-line. Exported for testing.
+ * Reads and processes the response reply-by-reply. Exported for testing.
  *
  * @see {@link https://github.com/redis/redis-specifications/blob/master/protocol/RESP3.md}
  *
@@ -226,7 +235,7 @@ async function sendCommand(
   raw = false,
 ): Promise<Reply> {
   await writeCommand(redisConn, command);
-  return readReply(readLine(redisConn), raw);
+  return readReply(readLines(redisConn), raw);
 }
 
 async function pipelineCommands(
@@ -235,14 +244,14 @@ async function pipelineCommands(
 ): Promise<Reply[]> {
   const bytes = commands.map(createRequest);
   await writeAll(redisConn, concat(bytes));
-  return readNReplies(commands.length, readLine(redisConn));
+  return readNReplies(commands.length, readLines(redisConn));
 }
 
 async function* readReplies(
   redisConn: Deno.Conn,
   raw = false,
 ): AsyncIterableIterator<Reply> {
-  const iterator = readLine(redisConn);
+  const iterator = readLines(redisConn);
   while (true) {
     yield await readReply(iterator, raw);
   }

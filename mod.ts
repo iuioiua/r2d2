@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { chunk } from "@std/collections/chunk";
 import { concat } from "@std/bytes/concat";
-import { readLines } from "./read_delim.ts";
+import type { Reader } from "@std/io/types";
 import { writeAll } from "@std/io/write_all";
 import type { Writer } from "@std/io/types";
 
@@ -36,6 +36,8 @@ export type Reply =
   | Record<string, any>
   | Reply[];
 
+const BUFFER_LENGTH = 1_024;
+
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const CRLF = "\r\n";
@@ -59,6 +61,27 @@ const PUSH_PREFIX = ">".charCodeAt(0);
 const SET_PREFIX = "~".charCodeAt(0);
 const SIMPLE_STRING_PREFIX = "+".charCodeAt(0);
 const VERBATIM_STRING_PREFIX = "=".charCodeAt(0);
+
+async function* readLines(
+  reader: Reader,
+): AsyncIterableIterator<Uint8Array> {
+  let chunks = new Uint8Array();
+  while (true) {
+    const buffer = new Uint8Array(BUFFER_LENGTH);
+    const result = await reader.read(buffer);
+    if (result === null) {
+      yield chunks;
+      return;
+    }
+    chunks = concat([chunks, buffer.slice(0, result)]);
+    const crlfIndex = chunks.indexOf(CRLF_RAW[0]);
+    if (crlfIndex !== -1 && chunks[crlfIndex + 1] === CRLF_RAW[1]) {
+      const line = chunks.slice(0, crlfIndex);
+      yield line;
+      chunks = chunks.slice(crlfIndex + 2);
+    }
+  }
+}
 
 /**
  * Transforms a command, which is an array of arguments, into an RESP request.

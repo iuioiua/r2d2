@@ -95,8 +95,6 @@ const DELIM_LPS = new Uint8Array([0, 0]);
 /**
  * Reads and processes the response line-by-line. Exported for testing.
  *
- * @see {@link https://github.com/redis/redis-specifications/blob/master/protocol/RESP3.md}
- *
  * @private
  */
 export async function* readLines(

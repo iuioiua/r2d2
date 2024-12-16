@@ -254,7 +254,7 @@ export class RedisClient {
    * await redisClient.writeCommand(["SHUTDOWN"]);
    * ```
    */
-  writeCommand(command: Command) {
+  writeCommand(command: Command): Promise<void> {
     return this.#enqueue(() => writeCommand(this.#conn, command));
   }
 

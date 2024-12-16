@@ -95,7 +95,7 @@ const DELIM_LPS = new Uint8Array([0, 0]);
 async function* readLine(reader: Reader): AsyncIterableIterator<Uint8Array> {
   // Avoid unicode problems
   let chunks = new Uint8Array();
-  const bufSize = Math.max(1024, DELIM_LPS.length + 1);
+  const bufSize = Math.max(1024);
 
   // Modified KMP
   let inspectIndex = 0;
@@ -106,9 +106,6 @@ async function* readLine(reader: Reader): AsyncIterableIterator<Uint8Array> {
     if (result === null) {
       // Yield last chunk.
       yield chunks;
-      return;
-    } else if (result < 0) {
-      // Discard all remaining and silently fail.
       return;
     }
     chunks = concat([chunks, inspectArr.slice(0, result)]);
@@ -132,8 +129,6 @@ async function* readLine(reader: Reader): AsyncIterableIterator<Uint8Array> {
         if (matchIndex === 0) {
           inspectIndex++;
           localIndex++;
-        } else {
-          matchIndex = DELIM_LPS[matchIndex - 1]!;
         }
       }
     }

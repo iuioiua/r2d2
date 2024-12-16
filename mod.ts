@@ -93,7 +93,6 @@ async function writeCommand(
 const DELIM_LPS = new Uint8Array([0, 0]);
 
 async function* readLine(reader: Reader): AsyncIterableIterator<Uint8Array> {
-  // Avoid unicode problems
   let chunks = new Uint8Array();
 
   // Modified KMP

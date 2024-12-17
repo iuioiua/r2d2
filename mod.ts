@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { chunk } from "@std/collections/chunk";
 import { concat } from "@std/bytes/concat";
-import { writeAll } from "@std/io/write_all";
+import { writeAll } from "@std/io/write-all";
 import type { Reader, Writer } from "@std/io/types";
 
 /**

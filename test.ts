@@ -1,5 +1,5 @@
 import { assertEquals, assertRejects } from "@std/assert";
-import { StringReader } from "@std/io/string_reader";
+import { Buffer } from "@std/io/buffer";
 import {
   type Command,
   readLines,
@@ -8,16 +8,18 @@ import {
   type Reply,
 } from "./mod.ts";
 
+const encoder = new TextEncoder();
+
 async function readReplyTest(output: string, expected: Reply) {
   assertEquals(
-    await readReply(readLines(new StringReader(output))),
+    await readReply(readLines(new Buffer(encoder.encode(output)))),
     expected,
   );
 }
 
 function readReplyRejectTest(output: string, expected: string) {
   return assertRejects(
-    () => readReply(readLines(new StringReader(output))),
+    () => readReply(readLines(new Buffer(encoder.encode(output)))),
     expected,
   );
 }

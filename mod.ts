@@ -1,9 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import { chunk } from "@std/collections/chunk";
 import { concat } from "@std/bytes/concat";
-import { readDelim } from "@std/io/read_delim";
 import { writeAll } from "@std/io/write_all";
-import type { Writer } from "@std/io/types";
+import type { Reader, Writer } from "@std/io/types";
 
 /**
  * A Redis client that can be used to send commands to a Redis server.
@@ -91,6 +90,56 @@ async function writeCommand(
   await writeAll(writer, createRequest(command));
 }
 
+const DELIM_LPS = new Uint8Array([0, 0]);
+
+/**
+ * Reads and processes the response line-by-line. Exported for testing.
+ *
+ * @private
+ */
+export async function* readLines(
+  reader: Reader,
+): AsyncIterableIterator<Uint8Array> {
+  let chunks = new Uint8Array();
+
+  // Modified KMP
+  let inspectIndex = 0;
+  let matchIndex = 0;
+  while (true) {
+    const inspectArr = new Uint8Array(1024);
+    const result = await reader.read(inspectArr);
+    if (result === null) {
+      // Yield last chunk.
+      yield chunks;
+      break;
+    }
+    chunks = concat([chunks, inspectArr.slice(0, result)]);
+    let localIndex = 0;
+    while (inspectIndex < chunks.length) {
+      if (inspectArr[localIndex] === CRLF[matchIndex]) {
+        inspectIndex++;
+        localIndex++;
+        matchIndex++;
+        if (matchIndex === DELIM_LPS.length) {
+          // Full match
+          const matchEnd = inspectIndex - DELIM_LPS.length;
+          const readyBytes = chunks.slice(0, matchEnd);
+          yield readyBytes;
+          // Reset match, different from KMP.
+          chunks = chunks.slice(inspectIndex);
+          inspectIndex = 0;
+          matchIndex = 0;
+        }
+      } else {
+        if (matchIndex === 0) {
+          inspectIndex++;
+          localIndex++;
+        }
+      }
+    }
+  }
+}
+
 function readNReplies(
   length: number,
   iterator: AsyncIterableIterator<Uint8Array>,
@@ -100,7 +149,7 @@ function readNReplies(
 }
 
 /**
- * Reads and processes the response line-by-line. Exported for testing.
+ * Reads and processes the response reply-by-reply. Exported for testing.
  *
  * @see {@link https://github.com/redis/redis-specifications/blob/master/protocol/RESP3.md}
  *
@@ -184,7 +233,7 @@ async function sendCommand(
   raw = false,
 ): Promise<Reply> {
   await writeCommand(redisConn, command);
-  return readReply(readDelim(redisConn, CRLF), raw);
+  return readReply(readLines(redisConn), raw);
 }
 
 async function pipelineCommands(
@@ -193,14 +242,14 @@ async function pipelineCommands(
 ): Promise<Reply[]> {
   const bytes = commands.map(createRequest);
   await writeAll(redisConn, concat(bytes));
-  return readNReplies(commands.length, readDelim(redisConn, CRLF));
+  return readNReplies(commands.length, readLines(redisConn));
 }
 
 async function* readReplies(
   redisConn: Deno.Conn,
   raw = false,
 ): AsyncIterableIterator<Reply> {
-  const iterator = readDelim(redisConn, CRLF);
+  const iterator = readLines(redisConn);
   while (true) {
     yield await readReply(iterator, raw);
   }

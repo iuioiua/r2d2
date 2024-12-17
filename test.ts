@@ -1,25 +1,25 @@
 import { assertEquals, assertRejects } from "@std/assert";
-import { StringReader } from "@std/io/string_reader";
-import { readDelim } from "@std/io/read_delim";
-import { type Command, readReply, RedisClient, type Reply } from "./mod.ts";
+import { Buffer } from "@std/io/buffer";
+import {
+  type Command,
+  readLines,
+  readReply,
+  RedisClient,
+  type Reply,
+} from "./mod.ts";
 
 const encoder = new TextEncoder();
 
-const CRLF = "\r\n";
-
 async function readReplyTest(output: string, expected: Reply) {
   assertEquals(
-    await readReply(readDelim(new StringReader(output), encoder.encode(CRLF))),
+    await readReply(readLines(new Buffer(encoder.encode(output)))),
     expected,
   );
 }
 
-async function readReplyRejectTest(output: string, expected: string) {
-  await assertRejects(
-    async () =>
-      await readReply(
-        readDelim(new StringReader(output), encoder.encode(CRLF)),
-      ),
+function readReplyRejectTest(output: string, expected: string) {
+  return assertRejects(
+    () => readReply(readLines(new Buffer(encoder.encode(output)))),
     expected,
   );
 }

@@ -16,9 +16,7 @@
     "bench:dev": "deno task redis:start && deno task bench",
     "coverage": "deno coverage coverage",
     "ok": "deno fmt --check && deno lint && deno task test",
-    "ok:dev": "deno fmt --check && deno lint && deno task test:dev",
-    "update:dev": "deno run -A https://deno.land/x/udd/main.ts --test=\"deno task ok:dev\" mod.ts test.ts",
-    "update": "deno run -A https://deno.land/x/udd/main.ts --test=\"deno task ok\" mod.ts test.ts"
+    "ok:dev": "deno fmt --check && deno lint && deno task test:dev"
   },
   "exclude": [
     "/coverage"

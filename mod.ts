@@ -5,19 +5,20 @@ import { writeAll } from "@std/io/write-all";
 import type { Reader, Writer } from "@std/io/types";
 
 /**
- * A Redis client that can be used to send commands to a Redis server.
+ * A Redis client for interacting with a Redis server.
  *
- * ```ts ignore
- * import { RedisClient } from "jsr:@iuioiua/r2d2";
+ * ```ts
+ * import { RedisClient } from "@iuioiua/r2d2";
+ * import { assertEquals } from "@std/assert/equals";
  *
- * const redisConn = await Deno.connect({ port: 6379 });
+ * using redisConn = await Deno.connect({ port: 6379 });
  * const redisClient = new RedisClient(redisConn);
  *
- * // Returns "OK"
- * await redisClient.sendCommand(["SET", "hello", "world"]);
+ * const reply1 = await redisClient.sendCommand(["SET", "hello", "world"]);
+ * assertEquals(reply1, "OK");
  *
- * // Returns "world"
- * await redisClient.sendCommand(["GET", "hello"]);
+ * const reply2 = await redisClient.sendCommand(["GET", "hello"]);
+ * assertEquals(reply2, "world");
  * ```
  *
  * @module
@@ -190,12 +191,197 @@ async function readReply(
   }
 }
 
+/**
+ * A Redis client for interacting with a Redis server.
+ *
+ * @example Send RESPv2 commands
+ *
+ * ```ts
+ * import { RedisClient } from "@iuioiua/r2d2";
+ * import { assertEquals } from "@std/assert/equals";
+ *
+ * using redisConn = await Deno.connect({ port: 6379 });
+ * const redisClient = new RedisClient(redisConn);
+ *
+ * const reply1 = await redisClient.sendCommand(["SET", "hello", "world"]);
+ * assertEquals(reply1, "OK");
+ *
+ * const reply2 = await redisClient.sendCommand(["GET", "hello"]);
+ * assertEquals(reply2, "world");
+ * ```
+ *
+ * @example Send RESP3 commands
+ *
+ * Switch to
+ * {@link https://github.com/redis/redis-specifications/blob/master/protocol/RESP3.md | RESP3}
+ * by sending a {@link https://redis.io/docs/latest/commands/hello/ | HELLO}
+ * command with the version number 3.
+ *
+ * ```ts
+ * import { RedisClient } from "@iuioiua/r2d2";
+ * import { assertEquals } from "@std/assert/equals";
+ *
+ * using redisConn = await Deno.connect({ port: 6379 });
+ * const redisClient = new RedisClient(redisConn);
+ *
+ * // Switch to RESP3
+ * await redisClient.sendCommand(["HELLO", 3]);
+ *
+ * const reply1 = await redisClient.sendCommand(["HSET", "myhash", "foo", 1, "bar", 2]);
+ * assertEquals(reply1, 2);
+ *
+ * const reply2 = await redisClient.sendCommand(["HGETALL", "myhash"]);
+ * assertEquals(reply2, { foo: "1", bar: "2" });
+ * ```
+ *
+ * @example Receive raw data
+ *
+ * Receive raw data by setting the `raw` parameter to `true` for your given
+ * method. This functionality is exclusive to bulk string replies.
+ *
+ * ```ts
+ * import { RedisClient } from "@iuioiua/r2d2";
+ * import { assertEquals } from "@std/assert/equals";
+ *
+ * using redisConn = await Deno.connect({ port: 6379 });
+ * const redisClient = new RedisClient(redisConn);
+ *
+ * const data = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+ *
+ * const reply1 = await redisClient.sendCommand(["SET", "data", data]);
+ * assertEquals(reply1, "OK");
+ *
+ * const reply2 = await redisClient.sendCommand(["GET", "data"], true);
+ * assertEquals(reply2, data);
+ * ```
+ *
+ * @example Execute operations with timeouts
+ *
+ * See the Deno Standard Library's
+ * {@linkcode https://jsr.io/@std/async/doc/~/deadline | deadline()} for more
+ * information. This function can be applied to any asynchronous operation.
+ *
+ * ```ts ignore
+ * import { RedisClient } from "@iuioiua/r2d2";
+ * import { deadline } from "@std/async/deadline";
+ *
+ * using redisConn = await Deno.connect({ port: 6379 });
+ * const redisClient = new RedisClient(redisConn);
+ *
+ * // Rejects with a timeout error if the command takes longer than 100 milliseconds.
+ * await deadline(redisClient.sendCommand(["GET", "foo"]), 100);
+ * ```
+ *
+ * @example Retry operations
+ *
+ * See the Deno Standard Library's
+ * {@linkcode https://jsr.io/@std/async/doc/~/retry | retry()} for more
+ * information. This function can be applied to any asynchronous operation.
+ *
+ * ```ts ignore
+ * import { RedisClient } from "@iuioiua/r2d2";
+ * import { retry } from "@std/async/retry";
+ *
+ * using redisConn = await Deno.connect({ port: 6379 });
+ * const redisClient = new RedisClient(redisConn);
+ *
+ * // Retries to connect until successful using the exponential backoff algorithm.
+ * await retry(() => redisClient.sendCommand(["GET", "foo"]));
+ * ```
+ *
+ * @example Pipeline commands
+ *
+ * See
+ * {@link https://redis.io/docs/latest/develop/use/pipelining/ | Redis pipelining}
+ * for more information.
+ *
+ * ```ts
+ * import { RedisClient } from "@iuioiua/r2d2";
+ * import { assertEquals } from "@std/assert/equals";
+ *
+ * using redisConn = await Deno.connect({ port: 6379 });
+ * const redisClient = new RedisClient(redisConn);
+ *
+ * const replies = await redisClient.pipelineCommands([
+ *   ["INCR", "Y"],
+ *   ["INCR", "Y"],
+ *   ["INCR", "Y"],
+ *   ["INCR", "Y"],
+ * ]);
+ * assertEquals(replies, [1, 2, 3, 4]);
+ * ```
+ *
+ * @example Use pub/sub channels
+ *
+ * See
+ * {@link https://redis.io/docs/latest/develop/interact/pubsub/ | Redis Pub/Sub}
+ * for more information.
+ *
+ * ```ts
+ * import { RedisClient } from "@iuioiua/r2d2";
+ * import { assertEquals } from "@std/assert/equals";
+ *
+ * using redisConn = await Deno.connect({ port: 6379 });
+ * const redisClient = new RedisClient(redisConn);
+ *
+ * await redisClient.writeCommand(["SUBSCRIBE", "mychannel"]);
+ * for await (const reply of redisClient.readReplies()) {
+ *   assertEquals(reply, ["subscribe", "mychannel", 1]);
+ *   break;
+ * }
+ * await redisClient.writeCommand(["UNSUBSCRIBE", "mychannel"]);
+ * ```
+ *
+ * @example Perform transaction
+ *
+ * See {@link https://redis.io/docs/latest/develop/interact/transactions/ | Transactions}
+ * for more information.
+ *
+ * ```ts
+ * import { RedisClient } from "@iuioiua/r2d2";
+ * import { assertEquals } from "@std/assert/equals";
+ *
+ * using redisConn = await Deno.connect({ port: 6379 });
+ * const redisClient = new RedisClient(redisConn);
+ *
+ * assertEquals(await redisClient.sendCommand(["MULTI"]), "OK");
+ * assertEquals(await redisClient.sendCommand(["INCR", "QUX"]), "QUEUED");
+ * assertEquals(await redisClient.sendCommand(["INCR", "QUX"]), "QUEUED");
+ * assertEquals(await redisClient.sendCommand(["EXEC"]), [1, 2]);
+ * ```
+ *
+ * @example Execute Lua scripts
+ *
+ * See
+ * {@link https://redis.io/docs/latest/develop/interact/programmability/eval-intro/ | Scripting with Lua}
+ * for more information.
+ *
+ * ```ts ignore
+ * import { RedisClient } from "@iuioiua/r2d2";
+ * import { assertEquals } from "@std/assert/equals";
+ *
+ * using redisConn = await Deno.connect({ port: 6379 });
+ * const redisClient = new RedisClient(redisConn);
+ *
+ * const reply1 = await redisClient.sendCommand(["EVAL", "return ARGV[1]", 0, "hello"]);
+ * assertEquals(reply1, "hello");
+ *
+ * const reply2 = await redisClient.sendCommand([
+ *   "FUNCTION",
+ *   "LOAD",
+ *   "#!lua name=mylib\nredis.register_function('knockknock', function() return 'Who\\'s there?' end)",
+ * ]);
+ * assertEquals(reply2, "mylib");
+ *
+ * const reply3 = await redisClient.sendCommand(["FCALL", "knockknock", 0]);
+ * assertEquals(reply3, "Who's there?");
+ * ```
+ */
 export class RedisClient {
   #conn: Reader & Writer;
   #lines: AsyncIterableIterator<Uint8Array>;
   #queue: Promise<any> = Promise.resolve();
 
-  /** Constructs a new instance. */
   constructor(conn: Reader & Writer) {
     this.#conn = conn;
     this.#lines = readLines(this.#conn);
@@ -207,20 +393,22 @@ export class RedisClient {
   }
 
   /**
-   * Sends a command to the Redis server and returns the parsed reply.
+   * Sends a command to the Redis server and returns the reply.
    *
-   * @example
+   * @example Basic usage
+   *
    * ```ts ignore
-   * import { RedisClient } from "jsr:@iuioiua/r2d2";
+   * import { RedisClient } from "@iuioiua/r2d2";
+   * import { assertEquals } from "@std/assert/equals";
    *
-   * const redisConn = await Deno.connect({ port: 6379 });
+   * using redisConn = await Deno.connect({ port: 6379 });
    * const redisClient = new RedisClient(redisConn);
    *
-   * // Returns "OK"
-   * await redisClient.sendCommand(["SET", "hello", "world"]);
+   * const reply1 = await redisClient.sendCommand(["SET", "hello", "world"]);
+   * assertEquals(reply1, "OK");
    *
-   * // Returns "world"
-   * await redisClient.sendCommand(["GET", "hello"]);
+   * const reply2 = await redisClient.sendCommand(["GET", "hello"]);
+   * assertEquals(reply2, "world");
    * ```
    */
   sendCommand(command: Command, raw = false): Promise<Reply> {
@@ -231,16 +419,22 @@ export class RedisClient {
   }
 
   /**
-   * Just writes a command to the Redis server without listening for a reply.
+   * Writes a command to the Redis server without listening for a reply.
    *
-   * @example
+   * @example Basic usage
    * ```ts ignore
-   * import { RedisClient } from "jsr:@iuioiua/r2d2";
+   * import { RedisClient } from "@iuioiua/r2d2";
+   * import { assertEquals } from "@std/assert/equals";
    *
-   * const redisConn = await Deno.connect({ port: 6379 });
+   * using redisConn = await Deno.connect({ port: 6379 });
    * const redisClient = new RedisClient(redisConn);
    *
-   * await redisClient.writeCommand(["SHUTDOWN"]);
+   * await redisClient.writeCommand(["SUBSCRIBE", "mychannel"]);
+   * for await (const reply of redisClient.readReplies()) {
+   *   assertEquals(reply, ["subscribe", "mychannel", 1]);
+   *   break;
+   * }
+   * await redisClient.writeCommand(["UNSUBSCRIBE", "mychannel"]);
    * ```
    */
   writeCommand(command: Command): Promise<void> {
@@ -250,19 +444,24 @@ export class RedisClient {
   /**
    * Used for pub/sub. Listens for replies from the Redis server.
    *
-   * @example
-   * ```ts ignore
-   * import { RedisClient } from "jsr:@iuioiua/r2d2";
+   * See
+   * {@link https://redis.io/docs/latest/develop/interact/pubsub/ | Redis Pub/Sub}
+   * for more information.
    *
-   * const redisConn = await Deno.connect({ port: 6379 });
+   * @example Basic usage
+   * ```ts ignore
+   * import { RedisClient } from "@iuioiua/r2d2";
+   * import { assertEquals } from "@std/assert/equals";
+   *
+   * using redisConn = await Deno.connect({ port: 6379 });
    * const redisClient = new RedisClient(redisConn);
    *
    * await redisClient.writeCommand(["SUBSCRIBE", "mychannel"]);
-   *
    * for await (const reply of redisClient.readReplies()) {
-   *   // Prints ["subscribe", "mychannel", 1] first iteration
-   *   console.log(reply);
+   *   assertEquals(reply, ["subscribe", "mychannel", 1]);
+   *   break;
    * }
+   * await redisClient.writeCommand(["UNSUBSCRIBE", "mychannel"]);
    * ```
    */
   async *readReplies(raw = false): AsyncIterableIterator<Reply> {
@@ -272,22 +471,28 @@ export class RedisClient {
   }
 
   /**
-   * Pipelines commands to the Redis server and returns the parsed replies.
+   * Pipelines commands to the Redis server and returns the replies.
    *
-   * @example
+   * See
+   * {@link https://redis.io/docs/latest/develop/use/pipelining/ | Redis pipelining}
+   * for more information.
+   *
+   * @example Basic usage
+   *
    * ```ts ignore
-   * import { RedisClient } from "jsr:@iuioiua/r2d2";
+   * import { RedisClient } from "@iuioiua/r2d2";
+   * import { assertEquals } from "@std/assert/equals";
    *
-   * const redisConn = await Deno.connect({ port: 6379 });
+   * using redisConn = await Deno.connect({ port: 6379 });
    * const redisClient = new RedisClient(redisConn);
    *
-   * // Returns [1, 2, 3, 4]
-   * await redisClient.pipelineCommands([
-   *  ["INCR", "X"],
-   *  ["INCR", "X"],
-   *  ["INCR", "X"],
-   *  ["INCR", "X"],
+   * const replies = await redisClient.pipelineCommands([
+   *   ["INCR", "Y"],
+   *   ["INCR", "Y"],
+   *   ["INCR", "Y"],
+   *   ["INCR", "Y"],
    * ]);
+   * assertEquals(replies, [1, 2, 3, 4]);
    * ```
    */
   pipelineCommands(commands: Command[]): Promise<Reply[]> {

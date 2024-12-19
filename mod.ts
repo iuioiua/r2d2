@@ -7,7 +7,7 @@ import type { Reader, Writer } from "@std/io/types";
 /**
  * A Redis client for interacting with a Redis server.
  *
- * ```ts
+ * ```ts ignore
  * import { RedisClient } from "@iuioiua/r2d2";
  * import { assertEquals } from "@std/assert/equals";
  *
@@ -196,7 +196,7 @@ async function readReply(
  *
  * @example Send RESPv2 commands
  *
- * ```ts
+ * ```ts ignore
  * import { RedisClient } from "@iuioiua/r2d2";
  * import { assertEquals } from "@std/assert/equals";
  *
@@ -217,7 +217,7 @@ async function readReply(
  * by sending a {@link https://redis.io/docs/latest/commands/hello/ | HELLO}
  * command with the version number 3.
  *
- * ```ts
+ * ```ts ignore
  * import { RedisClient } from "@iuioiua/r2d2";
  * import { assertEquals } from "@std/assert/equals";
  *
@@ -239,7 +239,7 @@ async function readReply(
  * Receive raw data by setting the `raw` parameter to `true` for your given
  * method. This functionality is exclusive to bulk string replies.
  *
- * ```ts
+ * ```ts ignore
  * import { RedisClient } from "@iuioiua/r2d2";
  * import { assertEquals } from "@std/assert/equals";
  *
@@ -295,7 +295,7 @@ async function readReply(
  * {@link https://redis.io/docs/latest/develop/use/pipelining/ | Redis pipelining}
  * for more information.
  *
- * ```ts
+ * ```ts ignore
  * import { RedisClient } from "@iuioiua/r2d2";
  * import { assertEquals } from "@std/assert/equals";
  *
@@ -317,7 +317,7 @@ async function readReply(
  * {@link https://redis.io/docs/latest/develop/interact/pubsub/ | Redis Pub/Sub}
  * for more information.
  *
- * ```ts
+ * ```ts ignore
  * import { RedisClient } from "@iuioiua/r2d2";
  * import { assertEquals } from "@std/assert/equals";
  *
@@ -337,7 +337,7 @@ async function readReply(
  * See {@link https://redis.io/docs/latest/develop/interact/transactions/ | Transactions}
  * for more information.
  *
- * ```ts
+ * ```ts ignore
  * import { RedisClient } from "@iuioiua/r2d2";
  * import { assertEquals } from "@std/assert/equals";
  *

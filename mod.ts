@@ -228,7 +228,7 @@ export async function readReply(
 }
 
 async function sendCommand(
-  redisConn: Deno.Conn,
+  redisConn: Reader & Writer,
   command: Command,
   raw = false,
 ): Promise<Reply> {
@@ -237,7 +237,7 @@ async function sendCommand(
 }
 
 async function pipelineCommands(
-  redisConn: Deno.Conn,
+  redisConn: Reader & Writer,
   commands: Command[],
 ): Promise<Reply[]> {
   const bytes = commands.map(createRequest);
@@ -246,7 +246,7 @@ async function pipelineCommands(
 }
 
 async function* readReplies(
-  redisConn: Deno.Conn,
+  redisConn: Reader & Writer,
   raw = false,
 ): AsyncIterableIterator<Reply> {
   const iterator = readLines(redisConn);
@@ -256,11 +256,11 @@ async function* readReplies(
 }
 
 export class RedisClient {
-  #conn: Deno.TcpConn | Deno.TlsConn;
+  #conn: Reader & Writer;
   #queue: Promise<any> = Promise.resolve();
 
   /** Constructs a new instance. */
-  constructor(conn: Deno.TcpConn | Deno.TlsConn) {
+  constructor(conn: Reader & Writer) {
     this.#conn = conn;
   }
 

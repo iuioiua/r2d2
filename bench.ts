@@ -1,18 +1,15 @@
-import * as denoRedis from "https://deno.land/x/redis@v0.32.2/mod.ts";
-import { Redis } from "npm:ioredis@5.3.2";
-import { createClient } from "npm:redis@4.6.13";
+import * as denoRedis from "@db/redis";
+import { Redis } from "ioredis";
+import { createClient } from "redis";
 
 import { RedisClient } from "./mod.ts";
 
-const HOSTNAME = "127.0.0.1";
-const PORT = 6379;
+const hostname = "127.0.0.1";
+const port = 6379;
 
-const redisConn = await Deno.connect({ hostname: HOSTNAME, port: PORT });
+const redisConn = await Deno.connect({ hostname, port });
 const redisClient = new RedisClient(redisConn);
-const denoRedisConn = await denoRedis.connect({
-  hostname: HOSTNAME,
-  port: PORT,
-});
+const denoRedisConn = await denoRedis.connect({ hostname, port });
 const ioRedis = new Redis();
 
 const nodeRedisClient = await createClient().connect();

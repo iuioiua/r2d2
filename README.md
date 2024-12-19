@@ -6,6 +6,22 @@
 
 Minimal [Redis](https://redis.io/) client for [Deno](https://deno.land/).
 
+```ts
+import { RedisClient } from "@iuioiua/r2d2";
+import { assertEquals } from "@std/assert/equals";
+
+using redisConn = await Deno.connect({ port: 6379 });
+const redisClient = new RedisClient(redisConn);
+
+const reply1 = await redisClient.sendCommand(["SET", "hello", "world"]);
+assertEquals(reply1, "OK");
+
+const reply2 = await redisClient.sendCommand(["GET", "hello"]);
+assertEquals(reply2, "world");
+```
+
+## Features
+
 - Supports RESPv2, RESP3, raw data, pipelining, pub/sub, transactions and Lua
   scripts.
 - Compatible with timeouts and retries.
@@ -25,17 +41,15 @@ checks formatting, runs the linter and runs tests.
 > Note: Redis must be installed on your local machine. For installation
 > instructions, see [here](https://redis.io/docs/getting-started/installation/).
 
-## Comparison
-
-Data recorded on December 20, 2024.
-
-### Size
+## Size comparison
 
 | Module      | Size (KB) | Dependencies |
 | ----------- | --------- | ------------ |
-| r2d2        | 24.99     | 4            |
-| deno-redis  | 171.12    | 30           |
-| npm:ioredis | 894.69    | 10           |
-| npm:redis   | 951.12    | 9            |
+| r2d2        | 25.04     | 4            |
+| deno-redis  | 213.19    | 33           |
+| npm:ioredis | 895.38    | 10           |
+| npm:redis   | 968.17    | 9            |
+
+Recorded on December 20, 2024.
 
 > Note: Results were produced using `deno info <module>`

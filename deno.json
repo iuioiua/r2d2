@@ -14,7 +14,6 @@
     "test:dev": "deno task redis:start && deno task test || redis-cli SHUTDOWN",
     "bench": "deno bench --allow-net --allow-env",
     "bench:dev": "deno task redis:start && deno task bench",
-    "coverage": "deno coverage coverage",
     "ok": "deno fmt --check && deno lint && deno task test",
     "ok:dev": "deno fmt --check && deno lint && deno task test:dev"
   },

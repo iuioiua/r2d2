@@ -1,25 +1,19 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { Buffer } from "@std/io/buffer";
-import {
-  type Command,
-  readLines,
-  readReply,
-  RedisClient,
-  type Reply,
-} from "./mod.ts";
+import { type Command, RedisClient, type Reply } from "./mod.ts";
 
 const encoder = new TextEncoder();
 
 async function readReplyTest(output: string, expected: Reply) {
-  assertEquals(
-    await readReply(readLines(new Buffer(encoder.encode(output)))),
-    expected,
-  );
+  const redisClient = new RedisClient(new Buffer(encoder.encode(output)));
+  const { value } = await redisClient.readReplies().next();
+  assertEquals(value, expected);
 }
 
 function readReplyRejectTest(output: string, expected: string) {
+  const redisClient = new RedisClient(new Buffer(encoder.encode(output)));
   return assertRejects(
-    () => readReply(readLines(new Buffer(encoder.encode(output)))),
+    () => redisClient.readReplies().next(),
     expected,
   );
 }

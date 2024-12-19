@@ -127,7 +127,7 @@ Deno.test("readReply() - large reply", async () => {
   await readReplyTest(`$${reply.length}\r\n${reply}\r\n`, reply);
 });
 
-using redisConn = await Deno.connect({ port: 6379 });
+const redisConn = await Deno.connect({ port: 6379 });
 const redisClient = new RedisClient(redisConn);
 
 await redisClient.sendCommand(["FLUSHALL"]);
@@ -208,8 +208,10 @@ Deno.test("RedisClient.writeCommand() + RedisClient.readReplies()", async () => 
 
 Deno.test("RedisClient.sendCommand() - no reply", async () => {
   await assertRejects(
-    () => redisClient.sendCommand(["SHUTDOWN"]),
+    async () => await redisClient.sendCommand(["SHUTDOWN"]),
     TypeError,
     "No reply received",
   );
 });
+
+addEventListener("unload", () => redisConn.close());

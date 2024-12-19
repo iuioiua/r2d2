@@ -92,14 +92,7 @@ async function writeCommand(
 
 const DELIM_LPS = new Uint8Array([0, 0]);
 
-/**
- * Reads and processes the response line-by-line. Exported for testing.
- *
- * @private
- */
-export async function* readLines(
-  reader: Reader,
-): AsyncIterableIterator<Uint8Array> {
+async function* readLines(reader: Reader): AsyncIterableIterator<Uint8Array> {
   let chunks = new Uint8Array();
 
   // Modified KMP
@@ -148,14 +141,7 @@ function readNReplies(
   return Array.fromAsync({ length }, () => readReply(iterator, raw));
 }
 
-/**
- * Reads and processes the response reply-by-reply. Exported for testing.
- *
- * @see {@link https://github.com/redis/redis-specifications/blob/master/protocol/RESP3.md}
- *
- * @private
- */
-export async function readReply(
+async function readReply(
   iterator: AsyncIterableIterator<Uint8Array>,
   raw = false,
 ): Promise<Reply> {

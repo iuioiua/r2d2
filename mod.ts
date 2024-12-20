@@ -99,13 +99,11 @@ async function* readLines(reader: Reader): AsyncIterableIterator<Uint8Array> {
     if (result === null) break;
     chunks = concat([chunks, buffer.subarray(0, result)]);
     let index;
-    while ((index = chunks.indexOf(CRLF[0])) !== -1) {
-      if (chunks[index + 1] === CRLF[1]) {
-        yield chunks.subarray(0, index);
-        chunks = chunks.subarray(index + 2);
-      } else {
-        break;
-      }
+    while (
+      (index = chunks.indexOf(CRLF[0])) !== -1 && chunks[index + 1] === CRLF[1]
+    ) {
+      yield chunks.subarray(0, index);
+      chunks = chunks.subarray(index + 2);
     }
   }
   yield chunks;
@@ -135,12 +133,9 @@ async function readReply(
       return length === -1 ? null : await readNReplies(length, iterator);
     }
     case ATTRIBUTE_PREFIX: {
-      /**
-       * Read but don't return attribute data.
-       *
-       * @todo include attribute data somehow
-       */
+      // TODO: include attribute data somehow
       const length = Number(line) * 2;
+      // Read but don't return attribute data
       await readNReplies(length, iterator);
       return readReply(iterator, raw);
     }
@@ -155,11 +150,14 @@ async function readReply(
       return line === "t";
     case BULK_STRING_PREFIX:
     case VERBATIM_STRING_PREFIX: {
-      if (line === "-1") {
-        return null;
+      switch (line) {
+        case "-1":
+          return null;
+        case "0":
+          return raw ? new Uint8Array() : "";
+        default:
+          return readReply(iterator, raw);
       }
-      const { value } = await iterator.next();
-      return raw ? value : decoder.decode(value);
     }
     case DOUBLE_PREFIX:
     case INTEGER_PREFIX: {
@@ -185,9 +183,9 @@ async function readReply(
       return new Set(await readNReplies(Number(line), iterator, raw));
     case SIMPLE_STRING_PREFIX:
       return line;
-    /** No prefix */
+    // No prefix
     default:
-      return decoder.decode(value);
+      return raw ? value : decoder.decode(value);
   }
 }
 

@@ -10,6 +10,13 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
 
+    services:
+      redis:
+        image: redis
+        ports:
+          # Maps port 6379 on service container to the host
+          - 6379:6379
+
     permissions:
       id-token: write # Needed for auth with Deno Deploy
       contents: read # Needed to clone the repository
@@ -20,23 +27,16 @@ jobs:
 
       - name: Install Deno
         uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
 
       - name: Install step
-        run: "deno task test"
+        run: deno task test
 
       - name: Build step
-        run: "deno coverage --html"
+        run: deno coverage --html
 
       - name: Upload to Deno Deploy
         uses: denoland/deployctl@v1
         with:
-          project: "r2d2-coverage"
-          entrypoint: "jsr:@std/http/file-server"
-          root: "coverage/html"
+          project: r2d2-coverage
+          entrypoint: jsr:@std/http/file-server
+          root: coverage/html

@@ -4,9 +4,9 @@ import { type Command, RedisClient, type Reply } from "./mod.ts";
 
 const encoder = new TextEncoder();
 
-async function readReplyTest(output: string, expected: Reply) {
+async function readReplyTest(output: string, expected: Reply, raw = false) {
   const redisClient = new RedisClient(new Buffer(encoder.encode(output)));
-  const { value } = await redisClient.readReplies().next();
+  const { value } = await redisClient.readReplies(raw).next();
   assertEquals(value, expected);
 }
 
@@ -71,6 +71,9 @@ Deno.test("readReply() - bulk string", () =>
 
 Deno.test("readReply() - emtpy bulk string", () =>
   readReplyTest("$0\r\n\r\n", ""));
+
+Deno.test("readReply() - emtpy raw bulk string", () =>
+  readReplyTest("$0\r\n\r\n", new Uint8Array(), true));
 
 Deno.test("readReply() - null bulk string", () =>
   readReplyTest("$-1\r\n", null));

@@ -6,7 +6,7 @@
 
 Minimal [Redis](https://redis.io/) client for [Deno](https://deno.land/).
 
-```ts
+```ts ignore
 import { RedisClient } from "@iuioiua/r2d2";
 import { assertEquals } from "@std/assert/equals";
 

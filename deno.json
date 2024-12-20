@@ -1,6 +1,6 @@
 {
   "name": "@iuioiua/r2d2",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "exports": "./mod.ts",
   "imports": {
     "@db/redis": "jsr:@db/redis@^0.37.0",

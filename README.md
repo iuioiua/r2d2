@@ -29,17 +29,10 @@ assertEquals(reply2, "world");
 - Written to be easily understood and debugged.
 - Encourages the use of actual Redis commands without intermediate abstractions.
 
-## Usage
+## Resources
 
-See [documentation](https://jsr.io/@iuioiua/r2d2/doc) for usage instructions.
-
-## Contributing
-
-Before submitting a pull request, please run `deno task ok:dev`. This task
-checks formatting, runs the linter and runs tests.
-
-> Note: Redis must be installed on your local machine. For installation
-> instructions, see [here](https://redis.io/docs/getting-started/installation/).
+- [Documentation](https://jsr.io/@iuioiua/r2d2/doc)
+- [Contributing guidelines](./CONTRIBUTING.md)
 
 ## Size comparison
 

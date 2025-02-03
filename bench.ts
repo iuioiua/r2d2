@@ -86,20 +86,10 @@ Deno.bench({
     await nodeRedisClient.hSet("hash", { a: "foo", b: "bar" });
     await nodeRedisClient.hGetAll("hash");
 
-    /** Auto-pipelining */
+    // Auto-pipelining
     await nodeRedisClient.incr("X");
     await nodeRedisClient.incr("X");
     await nodeRedisClient.incr("X");
     await nodeRedisClient.incr("X");
   },
-});
-
-addEventListener("beforeunload", async () => {
-  ioRedis.disconnect();
-  await nodeRedisClient.disconnect();
-});
-
-addEventListener("unload", () => {
-  denoRedisConn.close();
-  redisConn.close();
 });

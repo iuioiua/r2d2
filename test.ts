@@ -216,5 +216,3 @@ Deno.test("RedisClient.sendCommand() - no reply", async () => {
     "No reply received",
   );
 });
-
-addEventListener("unload", () => redisConn.close());

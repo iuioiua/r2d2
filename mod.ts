@@ -84,13 +84,6 @@ function createRequest(command: Command): Uint8Array {
   return concat(lines);
 }
 
-async function writeCommand(
-  writer: Writer,
-  command: Command,
-): Promise<void> {
-  await writeAll(writer, createRequest(command));
-}
-
 async function* readLines(reader: Reader): AsyncIterableIterator<Uint8Array> {
   const buffer = new Uint8Array(1024);
   let chunks = new Uint8Array();
@@ -142,7 +135,7 @@ async function readReply(
     case BIG_NUMBER_PREFIX:
       return BigInt(line);
     case BLOB_ERROR_PREFIX: {
-      /** Skip to reading the next line, which is a string */
+      // Skip to reading the next line, which is a string
       const { value } = await iterator.next();
       return Promise.reject(decoder.decode(value));
     }
@@ -411,7 +404,7 @@ export class RedisClient {
    */
   sendCommand(command: Command, raw = false): Promise<Reply> {
     return this.#enqueue(async () => {
-      await writeCommand(this.#conn, command);
+      await writeAll(this.#conn, createRequest(command));
       return readReply(this.#lines, raw);
     });
   }
@@ -436,7 +429,7 @@ export class RedisClient {
    * ```
    */
   writeCommand(command: Command): Promise<void> {
-    return this.#enqueue(() => writeCommand(this.#conn, command));
+    return this.#enqueue(() => writeAll(this.#conn, createRequest(command)));
   }
 
   /**
